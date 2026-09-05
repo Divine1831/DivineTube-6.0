@@ -9,13 +9,16 @@ function loading(e){e.innerHTML='<div class="skeletonGrid">'+Array.from({length:
 
 function card(v){
   const n = v.profiles?.username || 'Creator';
-  const fallbackThumb = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop';
-  const thumbSrc = v.thumbnail_url ? esc(v.thumbnail_url) : fallbackThumb;
+  const videoSrc = esc(v.video_url || '');
+  const thumbSrc = v.thumbnail_url ? esc(v.thumbnail_url) : '';
 
   return `<article class="card">
     <a href="watch.html?id=${v.id}">
       <div class="thumb">
-        <img loading="lazy" src="${thumbSrc}" alt="${esc(v.title)}" onerror="this.onerror=null;this.src='${fallbackThumb}';">
+        ${thumbSrc 
+          ? `<img loading="lazy" src="${thumbSrc}" alt="${esc(v.title)}">`
+          : `<video src="${videoSrc}#t=0.5" preload="metadata" muted playsinline></video>`
+        }
       </div>
       <div class="meta">
         ${avatar(n)}
@@ -38,9 +41,11 @@ function extractVideoFrame(file){
   return new Promise(resolve => {
     const v = document.createElement('video');
     v.preload = 'metadata';
+    v.muted = true;
+    v.playsInline = true;
     v.src = URL.createObjectURL(file);
     v.currentTime = 1;
-    v.onloadeddata = () => {
+    v.onseeked = () => {
       const c = document.createElement('canvas');
       c.width = v.videoWidth || 640;
       c.height = v.videoHeight || 360;
