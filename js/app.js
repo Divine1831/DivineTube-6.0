@@ -1,38 +1,169 @@
+function getSb(){if(!window.supabaseClient&&window.supabase&&window.DIVINETUBE_CONFIG?.SUPABASE_URL){window.supabaseClient=window.supabase.createClient(window.DIVINETUBE_CONFIG.SUPABASE_URL,window.DIVINETUBE_CONFIG.SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})}return window.supabaseClient}
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])),fmt=n=>Number(n||0).toLocaleString(),date=n=>new Date(n).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+async function currentUser(){const s=getSb();if(!s)return null;try{return(await s.auth.getUser()).data.user}catch{return null}}
+function initials(u){return(u?.user_metadata?.username||u?.email?.split('@')[0]||'D').slice(0,1).toUpperCase()}
+function toggleTheme(){document.body.classList.toggle('light');localStorage.dt_theme=document.body.classList.contains('light')?'light':'dark'}
+function toast(m){const t=$('#toast');if(t){t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}}
+function avatar(n='D'){return`<div class="mini">${esc(n[0]?.toUpperCase()||'D')}</div>`}
+function loading(e){e.innerHTML='<div class="skeletonGrid">'+Array.from({length:8},()=>'<div class="skeleton"></div>').join('')+'</div>'}
+
 function card(v){
   const n = v.profiles?.username || 'Creator';
+  const videoSrc = esc(v.video_url || '');
+  const thumbSrc = v.thumbnail_url ? esc(v.thumbnail_url) : '';
 
-  return `
-    <article class="card">
-      <a href="watch.html?id=${encodeURIComponent(v.id)}">
-        <div class="thumb">
-          ${
-            v.thumbnail_url
-              ? `<img
-                  loading="lazy"
-                  src="${esc(v.thumbnail_url)}"
-                  alt="${esc(v.title)}"
-                >`
-              : `<div class="thumbFallback">▶</div>`
-          }
-
-          ${
-            v.duration
-              ? `<span class="duration">${esc(v.duration)}</span>`
-              : ''
-          }
+  return `<article class="card">
+    <a href="watch.html?id=${v.id}">
+      <div class="thumb">
+        ${thumbSrc 
+          ? `<img loading="lazy" src="${thumbSrc}" alt="${esc(v.title)}">`
+          : `<video src="${videoSrc}#t=0.5" preload="metadata" muted playsinline></video>`
+        }
+      </div>
+      <div class="meta">
+        ${avatar(n)}
+        <div>
+          <div class="title">${esc(v.title)}</div>
+          <div class="muted">${esc(n)}</div>
+          <div class="muted">${fmt(v.views)} views • ${date(v.created_at)}</div>
         </div>
-
-        <div class="meta">
-          ${avatar(n)}
-          <div>
-            <div class="title">${esc(v.title)}</div>
-            <div class="muted">${esc(n)}</div>
-            <div class="muted">
-              ${fmt(v.views)} views • ${date(v.created_at)}
-            </div>
-          </div>
-        </div>
-      </a>
-    </article>
-  `;
+      </div>
+    </a>
+  </article>`;
 }
+
+async function header(){const s=getSb(),u=await currentUser();if($('#avatar'))$('#avatar').textContent=initials(u);const l=$('#authLink');if(l){l.textContent=u?'Sign out':'Sign in';l.onclick=async()=>{if(u&&s){await s.auth.signOut();location.href='index.html'}else location.href='auth.html'}}if(localStorage.dt_theme==='light')document.body.classList.add('light')}
+async function loadVideos(target='#videoGrid',query='',limit=40,category=''){const s=getSb(),e=$(target);if(!e||!s)return;loading(e);let q=s.from('videos').select('*,profiles(username)').order('created_at',{ascending:false}).limit(limit);if(query)q=q.ilike('title',`%${query}%`);if(category)q=q.eq('category',category);const{data,error}=await q;if(error){e.innerHTML=`<div class="notice">Supabase error: ${esc(error.message)}</div>`;return}e.innerHTML=(data||[]).map(card).join('')||'<div class="notice">No videos found.</div>'}
+async function authPage(){const s=getSb(),f=$('#authForm');if(!f||!s)return;f.onsubmit=async e=>{e.preventDefault();const signup=$('#signup').checked,email=$('#email').value.trim(),password=$('#password').value,user=$('#username')?.value.trim();$('#msg').textContent='Please wait…';const r=signup?await s.auth.signUp({email,password,options:{data:{username:user||email.split('@')[0]}}}):await s.auth.signInWithPassword({email,password});if(r.error)$('#msg').textContent=r.error.message;else if(signup&&!r.data.session)$('#msg').textContent='Account created. Check your email if confirmation is enabled.';else location.href='index.html'}}
+
+/* Extract frame from uploaded video file */
+function extractVideoFrame(file){
+  return new Promise(resolve => {
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.muted = true;
+    v.playsInline = true;
+    v.src = URL.createObjectURL(file);
+    v.currentTime = 1;
+    v.onseeked = () => {
+      const c = document.createElement('canvas');
+      c.width = v.videoWidth || 640;
+      c.height = v.videoHeight || 360;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(v, 0, 0, c.width, c.height);
+      c.toBlob(b => {
+        URL.revokeObjectURL(v.src);
+        resolve(b);
+      }, 'image/jpeg', 0.85);
+    };
+    v.onerror = () => resolve(null);
+  });
+}
+
+async function uploadPage(){
+  const s=getSb(), f=$('#uploadForm');
+  if(!f||!s) return;
+  const u=await currentUser();
+  if(!u){
+    $('#uploadGate').innerHTML='<div class="notice">Please sign in before uploading.</div>';
+    f.style.display='none';
+    return;
+  }
+  const vi=$('#video'), ti=$('#thumb');
+  ti?.addEventListener('change', () => {
+    const x = ti.files[0];
+    if(x){
+      $('#preview').src = URL.createObjectURL(x);
+      $('#preview').classList.remove('hidden');
+    }
+  });
+
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const video = vi.files[0],
+          customThumb = ti?.files[0],
+          title = $('#title').value.trim(),
+          desc = $('#desc').value.trim(),
+          category = $('#category').value;
+
+    if(!video || !title) return $('#msg').textContent = 'Title and video are required.';
+
+    $('#msg').textContent = 'Uploading video…';
+    const safe = n => n.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const vp = `${u.id}/${crypto.randomUUID()}-${safe(video.name)}`;
+
+    let r = await s.storage.from('videos').upload(vp, video, {upsert: false, contentType: video.type || 'video/mp4'});
+    if(r.error) return $('#msg').textContent = r.error.message;
+
+    const videoUrl = s.storage.from('videos').getPublicUrl(vp).data.publicUrl;
+    let thumbUrl = null;
+
+    let thumbBlob = customThumb;
+    if(!thumbBlob){
+      $('#msg').textContent = 'Extracting video frame thumbnail…';
+      thumbBlob = await extractVideoFrame(video);
+    }
+
+    if(thumbBlob){
+      $('#msg').textContent = 'Uploading thumbnail…';
+      const tp = `${u.id}/${crypto.randomUUID()}-thumb.jpg`;
+      r = await s.storage.from('thumbnails').upload(tp, thumbBlob, {upsert: false, contentType: 'image/jpeg'});
+      if(!r.error){
+        thumbUrl = s.storage.from('thumbnails').getPublicUrl(tp).data.publicUrl;
+      }
+    }
+
+    r = await s.from('videos').insert({
+      owner_id: u.id,
+      title,
+      description: desc,
+      category,
+      video_url: videoUrl,
+      thumbnail_url: thumbUrl
+    }).select().single();
+
+    if(r.error) return $('#msg').textContent = r.error.message;
+
+    $('#msg').textContent = 'Published!';
+    setTimeout(() => location.href = 'watch.html?id=' + r.data.id, 700);
+  };
+}
+
+async function watchPage(){const s=getSb(),id=new URLSearchParams(location.search).get('id');if(!id||!s)return;const{data:v,error}=await s.from('videos').select('*,profiles(username,avatar_url)').eq('id',id).single();if(error||!v)return;if($('#title'))$('#title').textContent=v.title;if($('#desc'))$('#desc').textContent=v.description||'No description.';if($('#views'))$('#views').textContent=`${fmt(v.views)} views • ${date(v.created_at)}`;
+if($('#player')){
+  const player = $('#player');
+  player.src = v.video_url;
+  if (v.thumbnail_url) player.poster = v.thumbnail_url;
+}
+if($('#channel'))$('#channel').textContent=v.profiles?.username||'Creator';if($('#category'))$('#category').textContent=v.category||'General';loadVideos('#related','',8);await s.rpc('increment_view',{video_uuid:v.id});await recordHistory(v.id);await updateLike(id);await updateSave(id);loadComments(id);$('#like')?.addEventListener('click',async()=>{const u=await currentUser();if(!u)return location.href='auth.html';const{data}=await s.from('likes').select('video_id').eq('video_id',id).eq('user_id',u.id).maybeSingle();if(data)await s.from('likes').delete().eq('video_id',id).eq('user_id',u.id);else await s.from('likes').insert({video_id:id,user_id:u.id});updateLike(id)});$('#save')?.addEventListener('click',async()=>{const u=await currentUser();if(!u)return location.href='auth.html';const{data}=await s.from('saved_videos').select('video_id').eq('video_id',id).eq('user_id',u.id).maybeSingle();if(data)await s.from('saved_videos').delete().eq('video_id',id).eq('user_id',u.id);else await s.from('saved_videos').insert({video_id:id,user_id:u.id});updateSave(id)});$('#share')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);toast('Link copied')}catch{toast('Copy the page URL')}});$('#subscribe')?.addEventListener('click',()=>subscribe(v.owner_id));$('#commentBtn')?.addEventListener('click',async()=>{const u=await currentUser();if(!u)return location.href='auth.html';const content=$('#commentInput').value.trim();if(!content)return;const r=await s.from('comments').insert({video_id:id,user_id:u.id,content});if(r.error)return toast(r.error.message);$('#commentInput').value='';loadComments(id)})}
+
+async function recordHistory(id){const s=getSb(),u=await currentUser();if(u&&s)await s.from('watch_history').upsert({user_id:u.id,video_id:id,watched_at:new Date().toISOString()},{onConflict:'user_id,video_id'})}
+async function updateLike(id){const s=getSb(),u=await currentUser(),b=$('#like');if(!b||!s)return;if(!u)return b.textContent='👍 Like';const{data}=await s.from('likes').select('video_id').eq('video_id',id).eq('user_id',u.id).maybeSingle();b.textContent=data?'👍 Liked':'👍 Like'}
+async function updateSave(id){const s=getSb(),u=await currentUser(),b=$('#save');if(!b||!s)return;if(!u)return b.textContent='💾 Save';const{data}=await s.from('saved_videos').select('video_id').eq('video_id',id).eq('user_id',u.id).maybeSingle();b.textContent=data?'💾 Saved':'💾 Save'}
+async function loadComments(id){const s=getSb();if(!s)return;const{data,error}=await s.from('comments').select('content,created_at,profiles(username)').eq('video_id',id).order('created_at',{ascending:false});if(error)return console.error(error);if($('#comments'))$('#comments').innerHTML=(data||[]).map(c=>`<div class="comment">${avatar(c.profiles?.username||'U')}<div><strong>${esc(c.profiles?.username||'User')}</strong><p>${esc(c.content)}</p><small class="muted">${new Date(c.created_at).toLocaleString()}</small></div></div>`).join('')||'<p class="muted">No comments yet.</p>'}
+async function subscribe(channelId){const s=getSb(),u=await currentUser();if(!u||!s)return location.href='auth.html';if(u.id===channelId)return toast('This is your channel.');const{data}=await s.from('subscriptions').select('channel_id').eq('subscriber_id',u.id).eq('channel_id',channelId).maybeSingle();if(data)await s.from('subscriptions').delete().eq('subscriber_id',u.id).eq('channel_id',channelId);else await s.from('subscriptions').insert({subscriber_id:u.id,channel_id:channelId});toast(data?'Unsubscribed':'Subscribed')}
+async function loadTrending(){const s=getSb(),e=$('#trending');if(!e||!s)return;loading(e);const{data,error}=await s.from('videos').select('*,profiles(username)').order('views',{ascending:false}).order('created_at',{ascending:false}).limit(40);if(error)return e.innerHTML=`<div class="notice">${esc(error.message)}</div>`;e.innerHTML=(data||[]).map(card).join('')||'<div class="notice">No videos yet.</div>'}
+async function channelPage(){const s=getSb();if(!$('#channelVideos')||!s)return;const u=await currentUser();if(!u)return $('#channelVideos').innerHTML='<div class="notice">Sign in to see your channel.</div>';const{data:p}=await s.from('profiles').select('*').eq('id',u.id).single();$('#channelName').textContent=p?.username||u.email.split('@')[0];$('#channelAvatar').textContent=initials(u);const{count}=await s.from('subscriptions').select('*',{count:'exact',head:true}).eq('channel_id',u.id);$('#subs').textContent=`${fmt(count)} subscribers`;const{data}=await s.from('videos').select('*,profiles(username)').eq('owner_id',u.id).order('created_at',{ascending:false});$('#channelVideos').innerHTML=(data||[]).map(card).join('')||'<div class="notice">No videos yet.</div>'}
+async function subscriptionsPage(){const s=getSb();if(!$('#subVideos')||!s)return;const u=await currentUser();if(!u)return $('#subVideos').innerHTML='<div class="notice">Sign in to see subscriptions.</div>';const{data}=await s.from('subscriptions').select('channel_id').eq('subscriber_id',u.id);const ids=(data||[]).map(x=>x.channel_id);if(!ids.length)return $('#subVideos').innerHTML='<div class="notice">No subscriptions yet.</div>';const r=await s.from('videos').select('*,profiles(username)').in('owner_id',ids).order('created_at',{ascending:false});$('#subVideos').innerHTML=(r.data||[]).map(card).join('')||'<div class="notice">No new videos.</div>'}
+async function libraryPage(){const s=getSb();if(!$('#libraryVideos')||!s)return;const u=await currentUser();if(!u)return $('#libraryVideos').innerHTML='<div class="notice">Sign in to use your library.</div>';const{data,error}=await s.from('saved_videos').select('videos(*,profiles(username))').eq('user_id',u.id);if(error)return $('#libraryVideos').innerHTML=`<div class="notice">${esc(error.message)}</div>`;$('#libraryVideos').innerHTML=(data||[]).map(x=>x.videos).filter(Boolean).map(card).join('')||'<div class="notice">No saved videos.</div>'}
+async function historyPage(){const s=getSb();if(!$('#historyVideos')||!s)return;const u=await currentUser();if(!u)return $('#historyVideos').innerHTML='<div class="notice">Sign in to see history.</div>';const{data,error}=await s.from('watch_history').select('watched_at,videos(*,profiles(username))').eq('user_id',u.id).order('watched_at',{ascending:false});if(error)return $('#historyVideos').innerHTML=`<div class="notice">${esc(error.message)}</div>`;$('#historyVideos').innerHTML=(data||[]).map(x=>x.videos).filter(Boolean).map(card).join('')||'<div class="notice">No history yet.</div>'}
+async function studioPage(){const s=getSb();if(!$('#studioStats')||!s)return;const u=await currentUser();if(!u)return $('#studioStats').innerHTML='<div class="notice">Sign in to open Studio.</div>';const{data,error}=await s.from('videos').select('id,title,views,created_at').eq('owner_id',u.id).order('views',{ascending:false});if(error)return $('#studioStats').innerHTML=`<div class="notice">${esc(error.message)}</div>`;const v=data||[],total=v.reduce((a,x)=>a+Number(x.views||0),0);$('#studioStats').innerHTML=`<div class="statGrid"><div class="statCard"><strong>${fmt(v.length)}</strong><span>Videos</span></div><div class="statCard"><strong>${fmt(total)}</strong><span>Total views</span></div><div class="statCard"><strong>${fmt(v[0]?.views||0)}</strong><span>Top video views</span></div></div><div class="panel"><h2>Top videos</h2>${v.slice(0,10).map((x,i)=>`<a class="studioRow" href="watch.html?id=${x.id}"><span>#${i+1}</span><span>${esc(x.title)}</span><b>${fmt(x.views)} views</b></a>`).join('')||'<p class="muted">Upload your first video.</p>'}</div>`}
+function initChips(){document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');loadVideos('#videoGrid','',40,b.dataset.category||'')})}
+async function init(){await header();const m=$('#menuBtn'),side=$('.side');if(m&&side){m.onclick=e=>{e.stopPropagation();side.classList.toggle('open')};side.querySelectorAll('a').forEach(a=>a.onclick=()=>side.classList.remove('open'));document.addEventListener('click',e=>{if(side.classList.contains('open')&&!side.contains(e.target)&&!m.contains(e.target))side.classList.remove('open')})}$('#searchBtn')?.addEventListener('click',searchGo);
+$('#topSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter')searchGo()});
+$('#themeBtn')?.addEventListener('click',toggleTheme);
+$('#mobileSearchBtn')?.addEventListener('click',()=>$('#searchPanel')?.classList.toggle('show'));authPage();uploadPage();watchPage();channelPage();subscriptionsPage();libraryPage();historyPage();studioPage();if($('#videoGrid'))loadVideos();if($('#allVideos')){const q=new URLSearchParams(location.search).get('q')||'';$('#query').textContent=q?`Search results for “${q}”`:'Search';loadVideos('#allVideos',q)}if($('#trending'))loadTrending();initChips()}
+function searchGo(){const q=$('#topSearch')?.value.trim();if(q)location.href='search.html?q='+encodeURIComponent(q)}
+document.addEventListener('DOMContentLoaded',init);
+
+// DivineTube Ultimate: lightweight picture-in-page mini player
+document.addEventListener('scroll',()=>{
+ const vid=document.querySelector('video');
+ if(!vid || vid.paused || vid.currentTime<1) return;
+ const nearTop=vid.getBoundingClientRect().bottom < 0;
+ let mini=document.getElementById('divineMiniPlayer');
+ if(nearTop){
+   if(!mini){mini=vid.cloneNode(true);mini.id='divineMiniPlayer';mini.muted=true;mini.controls=true;mini.style.cssText='position:fixed;right:12px;bottom:76px;width:180px;aspect-ratio:16/9;z-index:9999;background:#000;border-radius:12px;box-shadow:0 8px 30px #0008';document.body.appendChild(mini);}
+   mini.play().catch(()=>{});
+ }else if(mini){mini.remove();}
+});
