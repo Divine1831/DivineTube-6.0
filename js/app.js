@@ -160,30 +160,45 @@ function card(v) {
 }
 
 /* =========================================
-   HEADER
+   HEADER & AUTH STATE
 ========================================= */
 
 async function header() {
   const s = getSb();
   const u = await currentUser();
 
-  if ($('#avatar')) {
-    $('#avatar').textContent = initials(u);
-  }
+  const avatarEl = $('#avatar');
+  const authLinkEl = $('#authLink');
 
-  const l = $('#authLink');
+  if (u) {
+    // User is signed in
+    if (avatarEl) {
+      avatarEl.textContent = initials(u);
+      avatarEl.style.display = 'flex';
+    }
 
-  if (l) {
-    l.textContent = u ? 'Sign out' : 'Sign in';
+    if (authLinkEl) {
+      authLinkEl.textContent = 'Sign out';
+      authLinkEl.href = '#';
+      authLinkEl.onclick = async (e) => {
+        e.preventDefault();
+        if (s) {
+          await s.auth.signOut();
+          location.href = 'index.html';
+        }
+      };
+    }
+  } else {
+    // User is NOT signed in
+    if (avatarEl) {
+      avatarEl.style.display = 'none';
+    }
 
-    l.onclick = async () => {
-      if (u && s) {
-        await s.auth.signOut();
-        location.href = 'index.html';
-      } else {
-        location.href = 'auth.html';
-      }
-    };
+    if (authLinkEl) {
+      authLinkEl.textContent = 'Sign in';
+      authLinkEl.href = 'auth.html';
+      authLinkEl.onclick = null;
+    }
   }
 
   if (localStorage.dt_theme === 'light') {
@@ -559,7 +574,6 @@ async function watchPage() {
 
   loadVideos('#related', '', 8);
 
-  // Optimized async loading with Promise.all
   Promise.all([
     s.rpc('increment_view', { video_uuid: v.id }),
     recordHistory(v.id),
@@ -1031,6 +1045,17 @@ function initChips() {
 }
 
 /* =========================================
+   SEARCH
+========================================= */
+
+function searchGo() {
+  const q = $('#topSearch')?.value.trim();
+  if (q) {
+    location.href = 'search.html?q=' + encodeURIComponent(q);
+  }
+}
+
+/* =========================================
    INIT
 ========================================= */
 
@@ -1102,17 +1127,6 @@ async function init() {
   }
 
   initChips();
-}
-
-/* =========================================
-   SEARCH
-========================================= */
-
-function searchGo() {
-  const q = $('#topSearch')?.value.trim();
-  if (q) {
-    location.href = 'search.html?q=' + encodeURIComponent(q);
-  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
