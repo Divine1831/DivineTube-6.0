@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DivineTube Shorts</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+body{background:#000;color:#fff;overflow:hidden}
+#shortsApp{height:100vh;position:relative}
+.short{height:100vh;position:relative;display:flex;align-items:center;justify-content:center;scroll-snap-align:start}
+.short video{width:100%;height:100%;object-fit:cover;background:#111}
+.short .shade{position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.8))}
+.shortInfo{position:absolute;left:16px;right:78px;bottom:74px;z-index:2}
+.shortInfo h2{font-size:17px;margin:0 0 8px}.shortInfo p{font-size:14px;margin:0;color:#ddd}
+.shortActions{position:absolute;right:12px;bottom:90px;z-index:3;display:flex;flex-direction:column;gap:14px}
+.shortActions button{width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:20px}
+.shortActions span{display:block;font-size:11px;margin-top:-8px;text-align:center}
+#shortsFeed{height:100vh;overflow-y:auto;scroll-snap-type:y mandatory}
+.back{position:absolute;top:18px;left:16px;z-index:10;background:rgba(0,0,0,.45);color:#fff;border:0;border-radius:50%;width:42px;height:42px;font-size:22px}
+</style></head>
+<body>
+<div id="shortsApp"><button class="back" onclick="history.back()">‹</button><div id="shortsFeed"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script>
+const sb=window.supabase?.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);
+const feed=document.getElementById('shortsFeed');
+async function load(){
+ let q=sb.from('videos').select('*,profiles(username)').eq('is_short',true).order('created_at',{ascending:false}).limit(30);
+ let {data,error}=await q;
+ if(error||!data?.length){ feed.innerHTML='<div class="short"><div><h2>No Shorts yet</h2><p>Upload a Short to start your feed.</p></div></div>';return;}
+ feed.innerHTML=data.map(v=>`<section class="short" data-id="${v.id}">
+ <video src="${v.video_url}" playsinline loop preload="metadata"></video><div class="shade"></div>
+ <div class="shortInfo"><h2>${esc(v.title||'Untitled')}</h2><p>@${esc(v.profiles?.username||'creator')}</p></div>
+ <div class="shortActions"><button onclick="like('${v.id}',this)">♡</button><span>Like</span><button onclick="share('${v.id}')">↗</button><span>Share</span><button onclick="mute(this)">🔊</button><span>Sound</span></div>
+ </section>`).join('');
+ const io=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target.querySelector('video'); if(e.isIntersecting){v.play().catch(()=>{});}else v.pause();}),{threshold:.7});
+ document.querySelectorAll('.short').forEach(x=>io.observe(x));
+}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+async function like(id,b){let {data:{user}}=await sb.auth.getUser();if(!user){alert('Sign in to like videos');return} b.textContent='♥'; await sb.from('likes').upsert({user_id:user.id,video_id:id},{onConflict:'user_id,video_id'});}
+function share(id){navigator.clipboard?.writeText(location.origin+location.pathname+'?v='+id);alert('Video link copied');}
+function mute(b){let v=b.closest('.short').querySelector('video');v.muted=!v.muted;b.textContent=v.muted?'🔇':'🔊';}
+load();
+</script></body></html>

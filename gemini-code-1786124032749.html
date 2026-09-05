@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okoh Divine | Web Designer & Developer</title>
+
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root {
+  --bg-primary: #0b0f19;
+  --bg-surface: #151d30;
+  --bg-surface-hover: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent-blue: #38bdf8;
+  --accent-cyan: #00f2fe;
+  --gradient-main: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  --border-glass: rgba(255, 255, 255, 0.08);
+}
+
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-main);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Header & Nav */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 8%;
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.logo {
+  font-size: 26px;
+  font-weight: 800;
+  background: var(--gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+nav a:hover {
+  color: var(--accent-blue);
+}
+
+.menu-toggle {
+  display: none;
+  font-size: 24px;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: var(--gradient-main);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px -5px rgba(56, 189, 248, 0.6);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  box-shadow: none;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-blue);
+  box-shadow: none;
+}
+
+/* Hero Section */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 100px 8% 80px;
+  min-height: 85vh;
+  gap: 50px;
+}
+
+.hero-text {
+  max-width: 650px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 16px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--accent-blue);
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.hero-text h1 {
+  font-size: 60px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 15px;
+  letter-spacing: -1px;
+}
+
+.hero-text h2 {
+  font-size: 28px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 25px;
+}
+
+.hero-text p {
+  color: var(--text-muted);
+  font-size: 17px;
+  line-height: 1.8;
+  margin-bottom: 35px;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.hero-img-container {
+  position: relative;
+}
+
+.hero-img-container::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  height: 320px;
+  background: var(--accent-blue);
+  opacity: 0.2;
+  filter: blur(80px);
+  border-radius: 50%;
+  z-index: -1;
+}
+
+.hero img {
+  width: 340px;
+  height: 340px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid rgba(56, 189, 248, 0.5);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Base Sections */
+section {
+  padding: 100px 8%;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.section-title h2 {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.section-title p {
+  color: var(--text-muted);
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+/* About Cards */
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 30px;
+}
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  padding: 40px;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
+}
+
+.card-icon {
+  width: 50px;
+  height: 50px;
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--accent-blue);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+.card h3 {
+  font-size: 22px;
+  margin-bottom: 15px;
+}
+
+.card p {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* Skills */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.skill-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  padding: 30px;
+  border-radius: 16px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.skill-card i {
+  font-size: 40px;
+  color: var(--accent-blue);
+  margin-bottom: 15px;
+}
+
+.skill-card h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.skill-card p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.skill-card:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--accent-blue);
+  transform: translateY(-5px);
+}
+
+/* Projects */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}
+
+.project-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.project-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+}
+
+.project-preview {
+  height: 180px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 40px;
+  border-bottom: 1px solid var(--border-glass);
+  position: relative;
+}
+
+.project-tag {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(11, 15, 25, 0.8);
+  border: 1px solid var(--border-glass);
+  color: var(--accent-blue);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.project-content {
+  padding: 25px;
+}
+
+.project-content h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.project-content p {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.project-link-hint {
+  color: var(--accent-blue);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Modal / Lightbox Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-container {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 600px;
+  padding: 40px;
+  position: relative;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+.modal-overlay.active .modal-container {
+  transform: scale(1);
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+}
+
+.modal-icon {
+  width: 60px;
+  height: 60px;
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--accent-blue);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-bottom: 20px;
+}
+
+.modal-title {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.modal-description {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 25px;
+}
+
+.modal-details {
+  background: rgba(11, 15, 25, 0.5);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.modal-details h4 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent-blue);
+  margin-bottom: 10px;
+}
+
+.modal-details ul {
+  list-style: none;
+}
+
+.modal-details li {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-details li i {
+  color: var(--accent-blue);
+  font-size: 12px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 15px;
+}
+
+/* Contact */
+.contact-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 50px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  padding: 50px;
+  border-radius: 24px;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.info-icon {
+  width: 45px;
+  height: 45px;
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--accent-blue);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.info-text span {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.info-text strong {
+  font-size: 16px;
+}
+
+/* Back To Top Button */
+#topBtn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 48px;
+  height: 48px;
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 99;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+#topBtn.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+#topBtn:hover {
+  background: #0ea5e9;
+  transform: translateY(-4px);
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 40px 8%;
+  border-top: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 900px) {
+  .hero {
+    flex-direction: column-reverse;
+    text-align: center;
+    padding-top: 40px;
+  }
+  
+  .hero-text h1 {
+    font-size: 42px;
+  }
+  
+  .hero-buttons {
+    justify-content: center;
+  }
+
+  nav {
+    position: fixed;
+    top: 70px;
+    left: -100%;
+    width: 100%;
+    height: calc(100vh - 70px);
+    background: var(--bg-primary);
+    flex-direction: column;
+    justify-content: center;
+    transition: 0.3s ease;
+  }
+
+  nav.active {
+    left: 0;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .contact-container {
+    padding: 30px;
+  }
+
+  .modal-container {
+    padding: 25px;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Divine.</div>
+  <div class="menu-toggle" id="mobile-menu"><i class="fa-solid fa-bars"></i></div>
+  <nav id="nav-menu">
+    <a href="#about" class="nav-link">About</a>
+    <a href="#skills" class="nav-link">Skills</a>
+    <a href="#projects" class="nav-link">Projects</a>
+    <a href="#contact" class="nav-link">Contact</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-text">
+    <span class="badge">Available for Projects</span>
+    <h3>Hello, I'm</h3>
+    <h1>Okoh Divine</h1>
+    <h2>Web Designer & Developer</h2>
+    <p>
+      I'm a 14-year-old developer based in Edo State, Nigeria (SS2 Student). I specialize in creating pixel-perfect, responsive, and visually modern web experiences.
+    </p>
+    <div class="hero-buttons">
+      <a href="#contact" class="btn"><i class="fa-solid fa-paper-plane"></i> Hire Me</a>
+      <a href="https://wa.me/2348083411961" target="_blank" class="btn btn-secondary"><i class="fa-brands fa-whatsapp"></i> Chat on WhatsApp</a>
+    </div>
+  </div>
+  <div class="hero-img-container">
+    <img src="profile.jpg" alt="Okoh Divine">
+  </div>
+</section>
+
+<section id="about">
+  <div class="section-title">
+    <h2>About Me</h2>
+    <p>Passion, creativity, and clean code.</p>
+  </div>
+  <div class="about-grid">
+    <div class="card">
+      <div class="card-icon"><i class="fa-solid fa-user-gear"></i></div>
+      <h3>Who Am I?</h3>
+      <p>My name is <strong>Okoh Divine</strong>. I'm a dedicated young web developer passionate about bringing functional ideas to life on the internet. I aim to create sleek designs that deliver seamless user experiences across every modern device.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon"><i class="fa-solid fa-bullseye"></i></div>
+      <h3>My Vision</h3>
+      <p>My goal is to rank among Nigeria's leading software engineers. I spend my time mastering core web standards, understanding design systems, and building practical digital solutions for local and global clients.</p>
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="section-title">
+    <h2>My Core Tech</h2>
+    <p>Technologies I use to build scalable Web UIs.</p>
+  </div>
+  <div class="skills-grid">
+    <div class="skill-card">
+      <i class="fa-brands fa-html5"></i>
+      <h3>HTML5</h3>
+      <p>Semantic markup structure</p>
+    </div>
+    <div class="skill-card">
+      <i class="fa-brands fa-css3-alt"></i>
+      <h3>CSS3</h3>
+      <p>Flexbox, Grid & Animations</p>
+    </div>
+    <div class="skill-card">
+      <i class="fa-brands fa-js"></i>
+      <h3>JavaScript</h3>
+      <p>Dynamic DOM interaction</p>
+    </div>
+    <div class="skill-card">
+      <i class="fa-solid fa-mobile-screen"></i>
+      <h3>Responsive</h3>
+      <p>Mobile-first layouts</p>
+    </div>
+  </div>
+</section>
+
+<section id="projects">
+  <div class="section-title">
+    <h2>Featured Work</h2>
+    <p>Click any project to inspect technical details and features.</p>
+  </div>
+  <div class="projects-grid">
+    
+    <div class="project-card" data-project="school">
+      <div class="project-preview">
+        <span class="project-tag">Concept</span>
+        <i class="fa-solid fa-school"></i>
+      </div>
+      <div class="project-content">
+        <h3>School Portal UI</h3>
+        <p>A modern layout conceptualized for academic institutions with structured timetable and events display.</p>
+        <span class="project-link-hint">View Project Details <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </div>
+
+    <div class="project-card" data-project="business">
+      <div class="project-preview">
+        <span class="project-tag">Landing Page</span>
+        <i class="fa-solid fa-briefcase"></i>
+      </div>
+      <div class="project-content">
+        <h3>Business Landing Page</h3>
+        <p>A high-converting, professional landing page built with modern call-to-action sections.</p>
+        <span class="project-link-hint">View Project Details <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </div>
+
+    <div class="project-card" data-project="portfolio">
+      <div class="project-preview">
+        <span class="project-tag">Web App</span>
+        <i class="fa-solid fa-laptop-code"></i>
+      </div>
+      <div class="project-content">
+        <h3>Personal Portfolio</h3>
+        <p>An interactive portfolio built using pure HTML, CSS, and Vanilla JS with clean UI principles.</p>
+        <span class="project-link-hint">View Project Details <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="contact">
+  <div class="section-title">
+    <h2>Get In Touch</h2>
+    <p>Let's build something awesome together.</p>
+  </div>
+  <div class="contact-container">
+    <div class="contact-info">
+      <div class="info-item">
+        <div class="info-icon"><i class="fa-solid fa-location-dot"></i></div>
+        <div class="info-text">
+          <span>Location</span>
+          <strong>Edo State, Nigeria</strong>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fa-solid fa-envelope"></i></div>
+        <div class="info-text">
+          <span>Email</span>
+          <strong>okohdivine@gmail.com</strong>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fa-brands fa-whatsapp"></i></div>
+        <div class="info-text">
+          <span>WhatsApp</span>
+          <strong>+234 808 341 1961</strong>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; justify-content: center; gap: 15px;">
+      <p style="color: var(--text-muted); font-size: 15px;">Whether you need a full website designed or want to collaborate on a new project, feel free to drop me a message directly!</p>
+      <div>
+        <a href="mailto:okohdivine@gmail.com" class="btn"><i class="fa-solid fa-envelope"></i> Send Email</a>
+        <a href="https://wa.me/2348083411961" target="_blank" class="btn btn-secondary"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive Project Modal Overlay -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal-container">
+    <button class="modal-close" id="modalClose"><i class="fa-solid fa-xmark"></i></button>
+    <div class="modal-icon" id="modalIcon"><i class="fa-solid fa-circle-info"></i></div>
+    <h3 class="modal-title" id="modalTitle">Project Title</h3>
+    <p class="modal-description" id="modalDesc">Detailed description goes here...</p>
+    
+    <div class="modal-details">
+      <h4>Key Highlights</h4>
+      <ul id="modalHighlights">
+        <!-- Dynamic LI elements populated by JS -->
+      </ul>
+    </div>
+
+    <div class="modal-actions">
+      <a href="#contact" class="btn" id="modalContactBtn"><i class="fa-solid fa-paper-plane"></i> Inquire About This</a>
+      <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 Okoh Divine. Crafted with passion & code.</p>
+</footer>
+
+<button id="topBtn"><i class="fa-solid fa-arrow-up"></i></button>
+
+<script>
+// Project Modal Data Store
+const projectData = {
+  school: {
+    title: "School Portal UI",
+    icon: "fa-school",
+    description: "A complete user interface prototype designed specifically for modern primary and secondary educational institutions.",
+    highlights: [
+      "Responsive timetable grid for desktop and mobile devices",
+      "Dedicated announcements & news feed layout",
+      "Accessible typography and high-contrast UI components"
+    ]
+  },
+  business: {
+    title: "Business Landing Page",
+    icon: "fa-briefcase",
+    description: "A conversion-focused landing page template tailored for corporate services, small businesses, and startups.",
+    highlights: [
+      "High-impact hero section with distinct call-to-actions",
+      "Interactive features grid and testimonial cards",
+      "Fast-loading assets and lightweight clean markup"
+    ]
+  },
+  portfolio: {
+    title: "Personal Portfolio",
+    icon: "fa-laptop-code",
+    description: "A custom personal portfolio website built with zero heavy frameworks to showcase skills, experience, and projects.",
+    highlights: [
+      "Built with native HTML5, CSS3, and Vanilla JavaScript",
+      "Dark mode theme with custom CSS variables & animations",
+      "Integrated lightbox modal system for portfolio showcase"
+    ]
+  }
+};
+
+// DOM Modal Elements
+const modalOverlay = document.getElementById("projectModal");
+const modalTitle = document.getElementById("modalTitle");
+const modalIcon = document.getElementById("modalIcon");
+const modalDesc = document.getElementById("modalDesc");
+const modalHighlights = document.getElementById("modalHighlights");
+const modalClose = document.getElementById("modalClose");
+const modalCloseBtn = document.getElementById("modalCloseBtn");
+const modalContactBtn = document.getElementById("modalContactBtn");
+
+// Open Modal Function
+document.querySelectorAll(".project-card").forEach(card => {
+  card.addEventListener("click", () => {
+    const key = card.getAttribute("data-project");
+    const data = projectData[key];
+
+    if (data) {
+      modalTitle.textContent = data.title;
+      modalDesc.textContent = data.description;
+      modalIcon.innerHTML = `<i class="fa-solid ${data.icon}"></i>`;
+      
+      modalHighlights.innerHTML = "";
+      data.highlights.forEach(highlight => {
+        const li = document.createElement("li");
+        li.innerHTML = `<i class="fa-solid fa-check"></i> ${highlight}`;
+        modalHighlights.appendChild(li);
+      });
+
+      modalOverlay.classList.add("active");
+      document.body.style.overflow = "hidden"; // Prevent scrolling behind modal
+    }
+  });
+});
+
+// Close Modal Function
+function closeModal() {
+  modalOverlay.classList.remove("active");
+  document.body.style.overflow = "auto";
+}
+
+modalClose.addEventListener("click", closeModal);
+modalCloseBtn.addEventListener("click", closeModal);
+modalContactBtn.addEventListener("click", closeModal);
+
+modalOverlay.addEventListener("click", (e) => {
+  if (e.target === modalOverlay) closeModal();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && modalOverlay.classList.contains("active")) {
+    closeModal();
+  }
+});
+
+// Scroll Back to Top Button Behavior
+const topBtn = document.getElementById("topBtn");
+
+window.onscroll = function() {
+  if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+    topBtn.classList.add("visible");
+  } else {
+    topBtn.classList.remove("visible");
+  }
+};
+
+topBtn.addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Mobile Nav Toggle
+const mobileMenu = document.getElementById("mobile-menu");
+const navMenu = document.getElementById("nav-menu");
+const navLinks = document.querySelectorAll(".nav-link");
+
+mobileMenu.addEventListener("click", () => {
+  navMenu.classList.toggle("active");
+});
+
+navLinks.forEach(link => {
+  link.addEventListener("click", () => {
+    navMenu.classList.remove("active");
+  });
+});
+</script>
+
+</body>
+</html>
