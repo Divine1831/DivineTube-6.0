@@ -1,155 +1,119 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upload | DivineTube</title>
 
-  <title>Upload | DivineTube</title>
+<link rel="stylesheet" href="css/style.css">
 
-  <link rel="stylesheet" href="css/style.css">
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script>
-  <script src="js/layout.js" defer></script>
-  <script src="js/app.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/layout.js" defer></script>
+<script src="js/app.js" defer></script>
 </head>
 
 <body>
 
-  <div id="app"></div>
+<div id="app"></div>
 
-  <main class="page">
+<main class="page">
+  <div class="formPage">
 
-    <div class="formPage">
+    <h1>Upload a video</h1>
 
-      <h1>Upload a video</h1>
+    <div id="uploadGate"></div>
 
-      <div id="uploadGate"></div>
+    <form id="uploadForm" class="formCard">
 
-      <form id="uploadForm" class="formCard">
-
-        <!-- TITLE -->
-        <label>
-          Title
-
-          <input
-            id="title"
-            maxlength="120"
-            required
-            placeholder="Enter your video title"
-          >
-        </label>
-
-        <!-- DESCRIPTION -->
-        <label>
-          Description
-
-          <textarea
-            id="desc"
-            rows="6"
-            placeholder="Tell viewers about your video"
-          ></textarea>
-        </label>
-
-        <!-- CATEGORY -->
-        <label>
-          Category
-
-          <select id="category">
-            <option>General</option>
-            <option>Music</option>
-            <option>Gaming</option>
-            <option>Education</option>
-            <option>Tech</option>
-            <option>Sports</option>
-            <option>Comedy</option>
-          </select>
-        </label>
-
-        <!-- VIDEO FILE -->
-        <label>
-          Video file
-
-          <input
-            id="video"
-            type="file"
-            accept="video/*"
-          >
-        </label>
-
-        <!-- OR -->
-        <p
-          style="
-            text-align:center;
-            color:#929aaa;
-            margin:14px 0;
-            font-weight:600;
-          "
+      <label>
+        Title
+        <input
+          id="title"
+          maxlength="120"
+          required
+          placeholder="Enter your video title"
         >
-          OR
-        </p>
+      </label>
 
-        <!-- VIDEO URL -->
-        <label>
-          Video URL
+      <label>
+        Description
+        <textarea
+          id="desc"
+          rows="6"
+          placeholder="Tell viewers about your video"
+        ></textarea>
+      </label>
 
-          <input
-            id="videoUrl"
-            type="url"
-            placeholder="Paste a direct video file URL"
-          >
-        </label>
+      <label>
+        Category
+        <select id="category">
+          <option>General</option>
+          <option>Music</option>
+          <option>Gaming</option>
+          <option>Education</option>
+          <option>Tech</option>
+          <option>Sports</option>
+          <option>Comedy</option>
+        </select>
+      </label>
 
-        <p
-          class="muted"
-          style="margin-top:-6px;margin-bottom:14px;"
+      <label>
+        Video file
+        <input
+          id="video"
+          type="file"
+          accept="video/*"
         >
-          Use a direct video-file URL that you have permission to use.
-        </p>
+      </label>
 
-        <!-- THUMBNAIL -->
-        <label>
-          Thumbnail
+      <p style="text-align:center;color:#929aaa;margin:14px 0;font-weight:600;">
+        OR
+      </p>
 
-          <input
-            id="thumb"
-            type="file"
-            accept="image/*"
-          >
-        </label>
-
-        <!-- PREVIEW -->
-        <img
-          id="preview"
-          class="preview hidden"
-          alt="Thumbnail preview"
+      <label>
+        Video URL
+        <input
+          id="videoUrl"
+          type="url"
+          placeholder="Paste a direct video file URL"
         >
+      </label>
 
-        <!-- MESSAGE -->
-        <p
-          id="msg"
-          class="notice"
-        ></p>
+      <p class="muted" style="margin-top:-6px;margin-bottom:14px;">
+        Use a direct video-file URL that you have permission to use.
+      </p>
 
-        <!-- PUBLISH -->
-        <button
-          type="submit"
-          class="btn primary"
+      <label>
+        Thumbnail
+        <input
+          id="thumb"
+          type="file"
+          accept="image/*"
         >
-          Publish
-        </button>
+      </label>
 
-      </form>
+      <img
+        id="preview"
+        class="preview hidden"
+        alt="Thumbnail preview"
+      >
 
-    </div>
+      <p id="msg" class="notice"></p>
 
-  </main>
+      <button
+        type="submit"
+        class="btn primary"
+      >
+        Publish
+      </button>
 
-  <div
-    id="toast"
-    class="toast"
-  ></div>
+    </form>
+
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
 
 </body>
 </html>
