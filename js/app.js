@@ -1,7 +1,3 @@
-/* =========================================
-   SUPABASE CLIENT & UTILITIES
-========================================= */
-
 function getSb() {
   if (
     !window.supabaseClient &&
@@ -20,6 +16,7 @@ function getSb() {
       }
     );
   }
+
   return window.supabaseClient;
 }
 
@@ -34,7 +31,8 @@ const esc = s =>
     "'": '&#039;'
   }[c]));
 
-const fmt = n => Number(n || 0).toLocaleString();
+const fmt = n =>
+  Number(n || 0).toLocaleString();
 
 const date = n =>
   new Date(n).toLocaleDateString(undefined, {
@@ -64,16 +62,20 @@ function initials(u) {
 
 function toggleTheme() {
   document.body.classList.toggle('light');
-  localStorage.dt_theme = document.body.classList.contains('light')
-    ? 'light'
-    : 'dark';
+
+  localStorage.dt_theme =
+    document.body.classList.contains('light')
+      ? 'light'
+      : 'dark';
 }
 
 function toast(m) {
   const t = $('#toast');
+
   if (t) {
     t.textContent = m;
     t.classList.add('show');
+
     setTimeout(() => {
       t.classList.remove('show');
     }, 2200);
@@ -81,13 +83,18 @@ function toast(m) {
 }
 
 function avatar(n = 'D') {
-  return `<div class="mini">${esc(n[0]?.toUpperCase() || 'D')}</div>`;
+  return `<div class="mini">${esc(
+    n[0]?.toUpperCase() || 'D'
+  )}</div>`;
 }
 
 function loading(e) {
   e.innerHTML = `
     <div class="skeletonGrid">
-      ${Array.from({ length: 8 }, () => '<div class="skeleton"></div>').join('')}
+      ${Array.from(
+        { length: 8 },
+        () => '<div class="skeleton"></div>'
+      ).join('')}
     </div>
   `;
 }
@@ -101,30 +108,61 @@ function card(v) {
 
   return `
     <article class="card">
+
       <a href="watch.html?id=${encodeURIComponent(v.id)}">
+
         <div class="thumb">
+
           ${
             v.thumbnail_url
-              ? `<img loading="lazy" src="${esc(v.thumbnail_url)}" alt="${esc(v.title)}">`
-              : `<div class="thumbFallback">▶</div>`
+              ? `
+                <img
+                  loading="lazy"
+                  src="${esc(v.thumbnail_url)}"
+                  alt="${esc(v.title)}"
+                >
+              `
+              : `
+                <div class="thumbFallback">
+                  ▶
+                </div>
+              `
           }
+
           ${
             v.duration
-              ? `<span class="duration">${esc(v.duration)}</span>`
+              ? `
+                <span class="duration">
+                  ${esc(v.duration)}
+                </span>
+              `
               : ''
           }
+
         </div>
+
         <div class="meta">
+
           ${avatar(n)}
+
           <div>
-            <div class="title">${esc(v.title)}</div>
-            <div class="muted">${esc(n)}</div>
+            <div class="title">
+              ${esc(v.title)}
+            </div>
+
+            <div class="muted">
+              ${esc(n)}
+            </div>
+
             <div class="muted">
               ${fmt(v.views)} views • ${date(v.created_at)}
             </div>
           </div>
+
         </div>
+
       </a>
+
     </article>
   `;
 }
@@ -145,6 +183,7 @@ async function header() {
 
   if (l) {
     l.textContent = u ? 'Sign out' : 'Sign in';
+
     l.onclick = async () => {
       if (u && s) {
         await s.auth.signOut();
@@ -180,15 +219,23 @@ async function loadVideos(
   let q = s
     .from('videos')
     .select('*,profiles(username)')
-    .order('created_at', { ascending: false })
+    .order('created_at', {
+      ascending: false
+    })
     .limit(limit);
 
   if (query) {
-    q = q.ilike('title', `%${query}%`);
+    q = q.ilike(
+      'title',
+      `%${query}%`
+    );
   }
 
   if (category) {
-    q = q.eq('category', category);
+    q = q.eq(
+      'category',
+      category
+    );
   }
 
   const { data, error } = await q;
@@ -204,7 +251,11 @@ async function loadVideos(
 
   e.innerHTML =
     (data || []).map(card).join('') ||
-    `<div class="notice">No videos found.</div>`;
+    `
+      <div class="notice">
+        No videos found.
+      </div>
+    `;
 }
 
 /* =========================================
@@ -220,12 +271,13 @@ async function authPage() {
   f.onsubmit = async e => {
     e.preventDefault();
 
-    const signup = $('#signup')?.checked;
+    const signup = $('#signup').checked;
     const email = $('#email').value.trim();
     const password = $('#password').value;
     const user = $('#username')?.value.trim();
 
-    $('#msg').textContent = 'Please wait…';
+    $('#msg').textContent =
+      'Please wait…';
 
     const r = signup
       ? await s.auth.signUp({
@@ -233,7 +285,9 @@ async function authPage() {
           password,
           options: {
             data: {
-              username: user || email.split('@')[0]
+              username:
+                user ||
+                email.split('@')[0]
             }
           }
         })
@@ -243,24 +297,35 @@ async function authPage() {
         });
 
     if (r.error) {
-      $('#msg').textContent = r.error.message;
-    } else if (signup && !r.data.session) {
+      $('#msg').textContent =
+        r.error.message;
+
+    } else if (
+      signup &&
+      !r.data.session
+    ) {
       $('#msg').textContent =
         'Account created. Check your email if confirmation is enabled.';
+
     } else {
-      location.href = 'index.html';
+      location.href =
+        'index.html';
     }
   };
 }
 
 /* =========================================
-   CREATE THUMBNAIL FROM VIDEO
+   CREATE REAL THUMBNAIL FROM VIDEO
 ========================================= */
 
 function extractVideoFrame(file) {
   return new Promise(resolve => {
-    const video = document.createElement('video');
-    const url = URL.createObjectURL(file);
+
+    const video =
+      document.createElement('video');
+
+    const url =
+      URL.createObjectURL(file);
 
     video.preload = 'metadata';
     video.muted = true;
@@ -271,9 +336,11 @@ function extractVideoFrame(file) {
 
     function finish(result) {
       if (finished) return;
+
       finished = true;
 
       URL.revokeObjectURL(url);
+
       video.removeAttribute('src');
       video.load();
 
@@ -281,6 +348,7 @@ function extractVideoFrame(file) {
     }
 
     video.onloadedmetadata = () => {
+
       if (
         !video.duration ||
         !video.videoWidth ||
@@ -290,28 +358,53 @@ function extractVideoFrame(file) {
         return;
       }
 
-      const wantedTime = video.duration * 0.15;
-      const safeTime = Math.min(
-        Math.max(wantedTime, 0.1),
-        Math.max(video.duration - 0.1, 0.1)
-      );
+      /*
+       * Take a frame 15% into the video.
+       * This gives a real image from the uploaded video.
+       */
 
-      video.currentTime = safeTime;
+      const wantedTime =
+        video.duration * 0.15;
+
+      const safeTime =
+        Math.min(
+          Math.max(wantedTime, 0.1),
+          Math.max(video.duration - 0.1, 0.1)
+        );
+
+      video.currentTime =
+        safeTime;
     };
 
     video.onseeked = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
 
-        const ctx = canvas.getContext('2d');
+      try {
+
+        const canvas =
+          document.createElement('canvas');
+
+        canvas.width =
+          video.videoWidth;
+
+        canvas.height =
+          video.videoHeight;
+
+        const ctx =
+          canvas.getContext('2d');
+
         if (!ctx) {
           finish(null);
           return;
         }
 
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+          video,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
         canvas.toBlob(
           blob => {
             finish(blob);
@@ -319,16 +412,26 @@ function extractVideoFrame(file) {
           'image/jpeg',
           0.88
         );
+
       } catch (error) {
-        console.error('Thumbnail generation error:', error);
+
+        console.error(
+          'Thumbnail generation error:',
+          error
+        );
+
         finish(null);
       }
     };
 
     video.onerror = () => {
-      console.error('Could not read video.');
+      console.error(
+        'Could not read uploaded video.'
+      );
+
       finish(null);
     };
+
   });
 }
 
@@ -338,209 +441,267 @@ function extractVideoFrame(file) {
 
 function getVideoDuration(file) {
   return new Promise(resolve => {
-    const video = document.createElement('video');
-    const url = URL.createObjectURL(file);
+
+    const video =
+      document.createElement('video');
+
+    const url =
+      URL.createObjectURL(file);
 
     video.preload = 'metadata';
     video.src = url;
 
     video.onloadedmetadata = () => {
-      const total = Math.max(0, Math.floor(video.duration));
-      const min = Math.floor(total / 60);
-      const sec = total % 60;
+
+      const total =
+        Math.max(
+          0,
+          Math.floor(video.duration)
+        );
+
+      const min =
+        Math.floor(total / 60);
+
+      const sec =
+        total % 60;
 
       URL.revokeObjectURL(url);
-      resolve(`${min}:${sec < 10 ? '0' : ''}${sec}`);
+
+      resolve(
+        `${min}:${sec < 10 ? '0' : ''}${sec}`
+      );
     };
 
     video.onerror = () => {
       URL.revokeObjectURL(url);
       resolve('');
     };
+
   });
 }
 
 /* =========================================
-   GET VIDEO FROM DIRECT URL
-========================================= */
-
-async function getVideoFromUrl(url) {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Could not fetch video (${response.status})`);
-  }
-
-  const type = response.headers.get('content-type') || '';
-
-  if (!type.startsWith('video/')) {
-    throw new Error('That link is not a direct video file.');
-  }
-
-  const blob = await response.blob();
-
-  if (!blob.size) {
-    throw new Error('The video file is empty.');
-  }
-
-  return blob;
-}
-
-/* =========================================
-   UPLOAD PAGE
+   UPLOAD
 ========================================= */
 
 async function uploadPage() {
+
   const s = getSb();
   const f = $('#uploadForm');
 
   if (!f || !s) return;
 
-  const u = await currentUser();
+  const u =
+    await currentUser();
 
   if (!u) {
+
     if ($('#uploadGate')) {
-      $('#uploadGate').innerHTML = `
+      $('#uploadGate').innerHTML =
+        `
         <div class="notice">
           Please sign in before uploading.
         </div>
-      `;
+        `;
     }
+
     f.style.display = 'none';
+
     return;
   }
 
   const vi = $('#video');
-  const urlInput = $('#videoUrl');
   const ti = $('#thumb');
 
-  ti?.addEventListener('change', () => {
-    const file = ti.files?.[0];
-    if (file && $('#preview')) {
-      $('#preview').src = URL.createObjectURL(file);
-      $('#preview').classList.remove('hidden');
-    }
-  });
+  ti?.addEventListener(
+    'change',
+    () => {
 
-  vi?.addEventListener('change', () => {
-    if (vi.files?.length && urlInput) {
-      urlInput.value = '';
-    }
-  });
+      const x = ti.files[0];
 
-  urlInput?.addEventListener('input', () => {
-    if (urlInput.value.trim() && vi) {
-      vi.value = '';
+      if (x && $('#preview')) {
+
+        $('#preview').src =
+          URL.createObjectURL(x);
+
+        $('#preview')
+          .classList
+          .remove('hidden');
+      }
     }
-  });
+  );
 
   f.onsubmit = async e => {
+
     e.preventDefault();
 
-    const videoFile = vi?.files?.[0] || null;
-    const externalUrl = urlInput?.value.trim() || '';
-    const customThumb = ti?.files?.[0] || null;
-    const title = $('#title').value.trim();
-    const desc = $('#desc')?.value.trim() || '';
-    const category = $('#category')?.value || 'General';
+    const video =
+      vi?.files?.[0];
 
-    if (!title) {
-      $('#msg').textContent = 'Title is required.';
+    const customThumb =
+      ti?.files?.[0] || null;
+
+    const title =
+      $('#title').value.trim();
+
+    const desc =
+      $('#desc').value.trim();
+
+    const category =
+      $('#category').value;
+
+    if (!video || !title) {
+
+      $('#msg').textContent =
+        'Title and video are required.';
+
       return;
     }
 
-    if (!videoFile && !externalUrl) {
-      $('#msg').textContent = 'Choose a video file or paste a direct video URL.';
-      return;
-    }
+    /*
+     * 1. Generate the thumbnail FIRST.
+     */
 
-    let fileToUpload = videoFile;
+    let thumbBlob =
+      customThumb;
 
-    if (!videoFile && externalUrl) {
-      $('#msg').textContent = 'Getting video from URL…';
-      try {
-        fileToUpload = await getVideoFromUrl(externalUrl);
-      } catch (error) {
-        $('#msg').textContent = error.message;
-        return;
-      }
-    }
-
-    let thumbBlob = customThumb;
     if (!thumbBlob) {
-      $('#msg').textContent = 'Creating thumbnail from video…';
-      thumbBlob = await extractVideoFrame(fileToUpload);
+
+      $('#msg').textContent =
+        'Creating thumbnail from your video…';
+
+      thumbBlob =
+        await extractVideoFrame(video);
     }
 
-    $('#msg').textContent = 'Reading video information…';
-    const duration = await getVideoDuration(fileToUpload);
+    /*
+     * 2. Get the video duration.
+     */
 
-    let filename = videoFile?.name || 'external-video.mp4';
-    if (!videoFile && externalUrl) {
-      try {
-        const pathname = new URL(externalUrl).pathname;
-        const name = pathname.split('/').pop();
-        if (name) filename = name;
-      } catch {}
-    }
+    $('#msg').textContent =
+      'Reading video information…';
 
-    const safe = name => name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const durationStr =
+      await getVideoDuration(video);
 
-    $('#msg').textContent = 'Uploading video…';
-    const videoPath = `${u.id}/${crypto.randomUUID()}-${safe(filename)}`;
+    /*
+     * 3. Upload video.
+     */
 
-    let r = await s.storage.from('videos').upload(videoPath, fileToUpload, {
-      upsert: false,
-      contentType: fileToUpload.type || 'video/mp4'
-    });
+    $('#msg').textContent =
+      'Uploading video…';
+
+    const safe =
+      name =>
+        name.replace(
+          /[^a-zA-Z0-9._-]/g,
+          '_'
+        );
+
+    const vp =
+      `${u.id}/${crypto.randomUUID()}-${safe(video.name)}`;
+
+    let r =
+      await s.storage
+        .from('videos')
+        .upload(
+          vp,
+          video,
+          {
+            upsert: false,
+            contentType:
+              video.type ||
+              'video/mp4'
+          }
+        );
 
     if (r.error) {
-      console.error(r.error);
-      $('#msg').textContent = r.error.message;
+
+      $('#msg').textContent =
+        r.error.message;
+
       return;
     }
 
-    const videoUrl = s.storage.from('videos').getPublicUrl(videoPath).data.publicUrl;
+    const videoUrl =
+      s.storage
+        .from('videos')
+        .getPublicUrl(vp)
+        .data.publicUrl;
 
-    let thumbnailUrl = null;
+    /*
+     * 4. Upload the REAL thumbnail.
+     */
+
+    let thumbUrl = null;
+
     if (thumbBlob) {
-      $('#msg').textContent = 'Uploading thumbnail…';
-      const thumbnailPath = `${u.id}/${crypto.randomUUID()}-thumb.jpg`;
 
-      r = await s.storage.from('thumbnails').upload(thumbnailPath, thumbBlob, {
-        upsert: false,
-        contentType: 'image/jpeg'
-      });
+      $('#msg').textContent =
+        'Uploading video thumbnail…';
+
+      const tp =
+        `${u.id}/${crypto.randomUUID()}-thumb.jpg`;
+
+      r =
+        await s.storage
+          .from('thumbnails')
+          .upload(
+            tp,
+            thumbBlob,
+            {
+              upsert: false,
+              contentType:
+                'image/jpeg'
+            }
+          );
 
       if (!r.error) {
-        thumbnailUrl = s.storage.from('thumbnails').getPublicUrl(thumbnailPath).data.publicUrl;
+
+        thumbUrl =
+          s.storage
+            .from('thumbnails')
+            .getPublicUrl(tp)
+            .data.publicUrl;
       }
     }
 
-    r = await s
-      .from('videos')
-      .insert({
-        owner_id: u.id,
-        title,
-        description: desc,
-        category,
-        video_url: videoUrl,
-        external_url: externalUrl || null,
-        thumbnail_url: thumbnailUrl,
-        duration
-      })
-      .select()
-      .single();
+    /*
+     * 5. Save video information.
+     */
+
+    r =
+      await s
+        .from('videos')
+        .insert({
+          owner_id: u.id,
+          title,
+          description: desc,
+          category,
+          video_url: videoUrl,
+          thumbnail_url: thumbUrl,
+          duration: durationStr
+        })
+        .select()
+        .single();
 
     if (r.error) {
-      console.error(r.error);
-      $('#msg').textContent = r.error.message;
+
+      $('#msg').textContent =
+        r.error.message;
+
       return;
     }
 
-    $('#msg').textContent = 'Published!';
+    $('#msg').textContent =
+      'Published!';
+
     setTimeout(() => {
-      location.href = 'watch.html?id=' + r.data.id;
+
+      location.href =
+        'watch.html?id=' +
+        r.data.id;
+
     }, 700);
   };
 }
@@ -550,148 +711,321 @@ async function uploadPage() {
 ========================================= */
 
 async function watchPage() {
+
   const s = getSb();
-  const id = new URLSearchParams(location.search).get('id');
+
+  const id =
+    new URLSearchParams(
+      location.search
+    ).get('id');
 
   if (!id || !s) return;
 
-  const { data: v, error } = await s
-    .from('videos')
-    .select('*,profiles(username,avatar_url)')
-    .eq('id', id)
-    .single();
+  const { data: v, error } =
+    await s
+      .from('videos')
+      .select(
+        '*,profiles(username,avatar_url)'
+      )
+      .eq('id', id)
+      .single();
 
   if (error || !v) return;
 
-  if ($('#title')) $('#title').textContent = v.title;
-  if ($('#desc')) $('#desc').textContent = v.description || 'No description.';
-  if ($('#views')) $('#views').textContent = `${fmt(v.views)} views • ${date(v.created_at)}`;
+  if ($('#title')) {
+    $('#title').textContent =
+      v.title;
+  }
+
+  if ($('#desc')) {
+    $('#desc').textContent =
+      v.description ||
+      'No description.';
+  }
+
+  if ($('#views')) {
+    $('#views').textContent =
+      `${fmt(v.views)} views • ${date(v.created_at)}`;
+  }
+
+  /*
+   * IMPORTANT:
+   * Show the saved video thumbnail
+   * before the video starts.
+   */
 
   if ($('#player')) {
-    const player = $('#player');
+
+    const player =
+      $('#player');
+
     player.controls = true;
     player.playsInline = true;
     player.preload = 'metadata';
 
-    if (v.thumbnail_url) player.poster = v.thumbnail_url;
-    player.src = v.video_url;
+    if (v.thumbnail_url) {
+      player.poster =
+        v.thumbnail_url;
+    }
 
-    const savedTime = localStorage.getItem(`dt_pos_${v.id}`);
+    player.src =
+      v.video_url;
+
+    /*
+     * Continue where user stopped.
+     */
+
+    const savedTime =
+      localStorage.getItem(
+        `dt_pos_${v.id}`
+      );
+
     if (savedTime) {
+
       player.addEventListener(
         'loadedmetadata',
         () => {
-          const time = Number(savedTime);
-          if (Number.isFinite(time) && time > 0 && time < player.duration) {
-            player.currentTime = time;
+
+          const time =
+            Number(savedTime);
+
+          if (
+            Number.isFinite(time) &&
+            time > 0 &&
+            time < player.duration
+          ) {
+            player.currentTime =
+              time;
           }
         },
-        { once: true }
+        {
+          once: true
+        }
       );
     }
 
-    player.ontimeupdate = () => {
-      if (player.currentTime > 2) {
-        localStorage.setItem(`dt_pos_${v.id}`, player.currentTime);
-      }
-    };
+    player.ontimeupdate =
+      () => {
+
+        if (player.currentTime > 2) {
+
+          localStorage.setItem(
+            `dt_pos_${v.id}`,
+            player.currentTime
+          );
+        }
+      };
   }
 
-  if ($('#channel')) $('#channel').textContent = v.profiles?.username || 'Creator';
-  if ($('#category')) $('#category').textContent = v.category || 'General';
+  if ($('#channel')) {
+    $('#channel').textContent =
+      v.profiles?.username ||
+      'Creator';
+  }
 
-  loadVideos('#related', '', 8);
+  if ($('#category')) {
+    $('#category').textContent =
+      v.category ||
+      'General';
+  }
 
-  await s.rpc('increment_view', { video_uuid: v.id });
-  await recordHistory(v.id);
-  await updateLike(id);
-  await updateSave(id);
-  loadComments(id);
+  loadVideos(
+    '#related',
+    '',
+    8
+  );
+
+  await s.rpc(
+    'increment_view',
+    {
+      video_uuid: v.id
+    }
+  );
+
+  await recordHistory(
+    v.id
+  );
+
+  await updateLike(
+    id
+  );
+
+  await updateSave(
+    id
+  );
+
+  loadComments(
+    id
+  );
 
   /* LIKE */
-  $('#like')?.addEventListener('click', async () => {
-    const u = await currentUser();
-    if (!u) {
-      location.href = 'auth.html';
-      return;
-    }
 
-    const { data } = await s
-      .from('likes')
-      .select('video_id')
-      .eq('video_id', id)
-      .eq('user_id', u.id)
-      .maybeSingle();
+  $('#like')?.addEventListener(
+    'click',
+    async () => {
 
-    if (data) {
-      await s.from('likes').delete().eq('video_id', id).eq('user_id', u.id);
-    } else {
-      await s.from('likes').insert({ video_id: id, user_id: u.id });
+      const u =
+        await currentUser();
+
+      if (!u) {
+        location.href =
+          'auth.html';
+        return;
+      }
+
+      const { data } =
+        await s
+          .from('likes')
+          .select('video_id')
+          .eq('video_id', id)
+          .eq('user_id', u.id)
+          .maybeSingle();
+
+      if (data) {
+
+        await s
+          .from('likes')
+          .delete()
+          .eq('video_id', id)
+          .eq('user_id', u.id);
+
+      } else {
+
+        await s
+          .from('likes')
+          .insert({
+            video_id: id,
+            user_id: u.id
+          });
+      }
+
+      updateLike(id);
     }
-    updateLike(id);
-  });
+  );
 
   /* SAVE */
-  $('#save')?.addEventListener('click', async () => {
-    const u = await currentUser();
-    if (!u) {
-      location.href = 'auth.html';
-      return;
-    }
 
-    const { data } = await s
-      .from('saved_videos')
-      .select('video_id')
-      .eq('video_id', id)
-      .eq('user_id', u.id)
-      .maybeSingle();
+  $('#save')?.addEventListener(
+    'click',
+    async () => {
 
-    if (data) {
-      await s.from('saved_videos').delete().eq('video_id', id).eq('user_id', u.id);
-    } else {
-      await s.from('saved_videos').insert({ video_id: id, user_id: u.id });
+      const u =
+        await currentUser();
+
+      if (!u) {
+        location.href =
+          'auth.html';
+        return;
+      }
+
+      const { data } =
+        await s
+          .from('saved_videos')
+          .select('video_id')
+          .eq('video_id', id)
+          .eq('user_id', u.id)
+          .maybeSingle();
+
+      if (data) {
+
+        await s
+          .from('saved_videos')
+          .delete()
+          .eq('video_id', id)
+          .eq('user_id', u.id);
+
+      } else {
+
+        await s
+          .from('saved_videos')
+          .insert({
+            video_id: id,
+            user_id: u.id
+          });
+      }
+
+      updateSave(id);
     }
-    updateSave(id);
-  });
+  );
 
   /* SHARE */
-  $('#share')?.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      toast('Link copied');
-    } catch {
-      toast('Copy the page URL');
+
+  $('#share')?.addEventListener(
+    'click',
+    async () => {
+
+      try {
+
+        await navigator.clipboard
+          .writeText(location.href);
+
+        toast(
+          'Link copied'
+        );
+
+      } catch {
+
+        toast(
+          'Copy the page URL'
+        );
+      }
     }
-  });
+  );
 
   /* SUBSCRIBE */
-  $('#subscribe')?.addEventListener('click', () => subscribe(v.owner_id));
+
+  $('#subscribe')?.addEventListener(
+    'click',
+    () =>
+      subscribe(
+        v.owner_id
+      )
+  );
 
   /* COMMENT */
-  $('#commentBtn')?.addEventListener('click', async () => {
-    const u = await currentUser();
-    if (!u) {
-      location.href = 'auth.html';
-      return;
+
+  $('#commentBtn')?.addEventListener(
+    'click',
+    async () => {
+
+      const u =
+        await currentUser();
+
+      if (!u) {
+        location.href =
+          'auth.html';
+        return;
+      }
+
+      const content =
+        $('#commentInput')
+          .value
+          .trim();
+
+      if (!content) return;
+
+      const r =
+        await s
+          .from('comments')
+          .insert({
+            video_id: id,
+            user_id: u.id,
+            content
+          });
+
+      if (r.error) {
+        toast(
+          r.error.message
+        );
+        return;
+      }
+
+      $('#commentInput')
+        .value = '';
+
+      loadComments(id);
     }
-
-    const content = $('#commentInput').value.trim();
-    if (!content) return;
-
-    const r = await s.from('comments').insert({
-      video_id: id,
-      user_id: u.id,
-      content
-    });
-
-    if (r.error) {
-      toast(r.error.message);
-      return;
-    }
-
-    $('#commentInput').value = '';
-    loadComments(id);
-  });
+  );
 }
 
 /* =========================================
@@ -699,80 +1033,133 @@ async function watchPage() {
 ========================================= */
 
 async function recordHistory(id) {
-  const s = getSb();
-  const u = await currentUser();
 
-  if (u && s) {
-    await s.from('watch_history').upsert(
-      {
-        user_id: u.id,
-        video_id: id,
-        watched_at: new Date().toISOString()
-      },
-      { onConflict: 'user_id,video_id' }
-    );
+  const s = getSb();
+  const u =
+    await currentUser();
+
+  if (
+    u &&
+    s
+  ) {
+
+    await s
+      .from('watch_history')
+      .upsert(
+        {
+          user_id: u.id,
+          video_id: id,
+          watched_at:
+            new Date().toISOString()
+        },
+        {
+          onConflict:
+            'user_id,video_id'
+        }
+      );
   }
 }
 
 /* =========================================
-   LIKE & SAVE STATUS UPDATES
+   LIKE STATUS
 ========================================= */
 
 async function updateLike(id) {
+
   const s = getSb();
-  const u = await currentUser();
-  const b = $('#like');
+  const u =
+    await currentUser();
+
+  const b =
+    $('#like');
 
   if (!b || !s) return;
+
   if (!u) {
-    b.textContent = '👍 Like';
+
+    b.textContent =
+      '👍 Like';
+
     return;
   }
 
-  const { data } = await s
-    .from('likes')
-    .select('video_id')
-    .eq('video_id', id)
-    .eq('user_id', u.id)
-    .maybeSingle();
+  const { data } =
+    await s
+      .from('likes')
+      .select('video_id')
+      .eq('video_id', id)
+      .eq('user_id', u.id)
+      .maybeSingle();
 
-  b.textContent = data ? '👍 Liked' : '👍 Like';
-}
-
-async function updateSave(id) {
-  const s = getSb();
-  const u = await currentUser();
-  const b = $('#save');
-
-  if (!b || !s) return;
-  if (!u) {
-    b.textContent = '💾 Save';
-    return;
-  }
-
-  const { data } = await s
-    .from('saved_videos')
-    .select('video_id')
-    .eq('video_id', id)
-    .eq('user_id', u.id)
-    .maybeSingle();
-
-  b.textContent = data ? '💾 Saved' : '💾 Save';
+  b.textContent =
+    data
+      ? '👍 Liked'
+      : '👍 Like';
 }
 
 /* =========================================
-   COMMENTS & SUBSCRIPTIONS
+   SAVE STATUS
+========================================= */
+
+async function updateSave(id) {
+
+  const s = getSb();
+  const u =
+    await currentUser();
+
+  const b =
+    $('#save');
+
+  if (!b || !s) return;
+
+  if (!u) {
+
+    b.textContent =
+      '💾 Save';
+
+    return;
+  }
+
+  const { data } =
+    await s
+      .from('saved_videos')
+      .select('video_id')
+      .eq('video_id', id)
+      .eq('user_id', u.id)
+      .maybeSingle();
+
+  b.textContent =
+    data
+      ? '💾 Saved'
+      : '💾 Save';
+}
+
+/* =========================================
+   COMMENTS
 ========================================= */
 
 async function loadComments(id) {
+
   const s = getSb();
+
   if (!s) return;
 
-  const { data, error } = await s
-    .from('comments')
-    .select('content,created_at,profiles(username)')
-    .eq('video_id', id)
-    .order('created_at', { ascending: false });
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('comments')
+      .select(
+        'content,created_at,profiles(username)'
+      )
+      .eq('video_id', id)
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      );
 
   if (error) {
     console.error(error);
@@ -780,275 +1167,866 @@ async function loadComments(id) {
   }
 
   if ($('#comments')) {
+
     $('#comments').innerHTML =
       (data || [])
-        .map(
-          c => `
-            <div class="comment">
-              ${avatar(c.profiles?.username || 'U')}
-              <div>
-                <strong>${esc(c.profiles?.username || 'User')}</strong>
-                <p>${esc(c.content)}</p>
-                <small class="muted">${new Date(c.created_at).toLocaleString()}</small>
-              </div>
+        .map(c => `
+          <div class="comment">
+
+            ${avatar(
+              c.profiles?.username ||
+              'U'
+            )}
+
+            <div>
+
+              <strong>
+                ${esc(
+                  c.profiles?.username ||
+                  'User'
+                )}
+              </strong>
+
+              <p>
+                ${esc(c.content)}
+              </p>
+
+              <small class="muted">
+                ${new Date(
+                  c.created_at
+                ).toLocaleString()}
+              </small>
+
             </div>
-          `
-        )
-        .join('') || `<p class="muted">No comments yet.</p>`;
+
+          </div>
+        `)
+        .join('') ||
+      '<p class="muted">No comments yet.</p>';
   }
 }
 
+/* =========================================
+   SUBSCRIBE
+========================================= */
+
 async function subscribe(channelId) {
+
   const s = getSb();
-  const u = await currentUser();
+  const u =
+    await currentUser();
 
   if (!u || !s) {
-    location.href = 'auth.html';
+    location.href =
+      'auth.html';
     return;
   }
 
   if (u.id === channelId) {
-    toast('This is your channel.');
+    toast(
+      'This is your channel.'
+    );
     return;
   }
 
-  const { data } = await s
-    .from('subscriptions')
-    .select('channel_id')
-    .eq('subscriber_id', u.id)
-    .eq('channel_id', channelId)
-    .maybeSingle();
+  const { data } =
+    await s
+      .from('subscriptions')
+      .select('channel_id')
+      .eq(
+        'subscriber_id',
+        u.id
+      )
+      .eq(
+        'channel_id',
+        channelId
+      )
+      .maybeSingle();
 
   if (data) {
-    await s.from('subscriptions').delete().eq('subscriber_id', u.id).eq('channel_id', channelId);
+
+    await s
+      .from('subscriptions')
+      .delete()
+      .eq(
+        'subscriber_id',
+        u.id
+      )
+      .eq(
+        'channel_id',
+        channelId
+      );
+
   } else {
-    await s.from('subscriptions').insert({ subscriber_id: u.id, channel_id: channelId });
+
+    await s
+      .from('subscriptions')
+      .insert({
+        subscriber_id: u.id,
+        channel_id:
+          channelId
+      });
   }
 
-  toast(data ? 'Unsubscribed' : 'Subscribed');
+  toast(
+    data
+      ? 'Unsubscribed'
+      : 'Subscribed'
+  );
 }
 
 /* =========================================
-   TRENDING, CHANNEL, SUBSCRIPTIONS, LIBRARY, HISTORY
+   TRENDING
 ========================================= */
 
 async function loadTrending() {
+
   const s = getSb();
-  const e = $('#trending');
+  const e =
+    $('#trending');
 
   if (!e || !s) return;
+
   loading(e);
 
-  const { data, error } = await s
-    .from('videos')
-    .select('*,profiles(username)')
-    .order('views', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(40);
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('videos')
+      .select(
+        '*,profiles(username)'
+      )
+      .order(
+        'views',
+        {
+          ascending: false
+        }
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      )
+      .limit(40);
 
   if (error) {
-    e.innerHTML = `<div class="notice">${esc(error.message)}</div>`;
+
+    e.innerHTML =
+      `
+      <div class="notice">
+        ${esc(error.message)}
+      </div>
+      `;
+
     return;
   }
 
-  e.innerHTML = (data || []).map(card).join('') || `<div class="notice">No videos yet.</div>`;
+  e.innerHTML =
+    (data || [])
+      .map(card)
+      .join('') ||
+    `
+      <div class="notice">
+        No videos yet.
+      </div>
+    `;
 }
+
+/* =========================================
+   CHANNEL
+========================================= */
 
 async function channelPage() {
-  const s = getSb();
-  if (!$('#channelVideos') || !s) return;
 
-  const u = await currentUser();
+  const s = getSb();
+
+  if (!$('#channelVideos') || !s)
+    return;
+
+  const u =
+    await currentUser();
+
   if (!u) {
-    $('#channelVideos').innerHTML = `<div class="notice">Sign in to see your channel.</div>`;
+
+    $('#channelVideos').innerHTML =
+      `
+      <div class="notice">
+        Sign in to see your channel.
+      </div>
+      `;
+
     return;
   }
 
-  const { data: p } = await s.from('profiles').select('*').eq('id', u.id).single();
+  const { data: p } =
+    await s
+      .from('profiles')
+      .select('*')
+      .eq('id', u.id)
+      .single();
 
-  if ($('#channelName')) $('#channelName').textContent = p?.username || u.email.split('@')[0];
-  if ($('#channelAvatar')) $('#channelAvatar').textContent = initials(u);
+  $('#channelName').textContent =
+    p?.username ||
+    u.email.split('@')[0];
 
-  const { count } = await s
-    .from('subscriptions')
-    .select('*', { count: 'exact', head: true })
-    .eq('channel_id', u.id);
+  $('#channelAvatar').textContent =
+    initials(u);
 
-  if ($('#subs')) $('#subs').textContent = `${fmt(count)} subscribers`;
+  const { count } =
+    await s
+      .from('subscriptions')
+      .select(
+        '*',
+        {
+          count: 'exact',
+          head: true
+        }
+      )
+      .eq(
+        'channel_id',
+        u.id
+      );
 
-  const { data } = await s
-    .from('videos')
-    .select('*,profiles(username)')
-    .eq('owner_id', u.id)
-    .order('created_at', { ascending: false });
+  $('#subs').textContent =
+    `${fmt(count)} subscribers`;
 
-  $('#channelVideos').innerHTML = (data || []).map(card).join('') || `<div class="notice">No videos yet.</div>`;
+  const { data } =
+    await s
+      .from('videos')
+      .select(
+        '*,profiles(username)'
+      )
+      .eq(
+        'owner_id',
+        u.id
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      );
+
+  $('#channelVideos').innerHTML =
+    (data || [])
+      .map(card)
+      .join('') ||
+    `
+      <div class="notice">
+        No videos yet.
+      </div>
+    `;
 }
+
+/* =========================================
+   SUBSCRIPTIONS
+========================================= */
 
 async function subscriptionsPage() {
-  const s = getSb();
-  if (!$('#subVideos') || !s) return;
 
-  const u = await currentUser();
+  const s = getSb();
+
+  if (!$('#subVideos') || !s)
+    return;
+
+  const u =
+    await currentUser();
+
   if (!u) {
-    $('#subVideos').innerHTML = `<div class="notice">Sign in to see subscriptions.</div>`;
+
+    $('#subVideos').innerHTML =
+      `
+      <div class="notice">
+        Sign in to see subscriptions.
+      </div>
+      `;
+
     return;
   }
 
-  const { data } = await s.from('subscriptions').select('channel_id').eq('subscriber_id', u.id);
-  const ids = (data || []).map(x => x.channel_id);
+  const { data } =
+    await s
+      .from('subscriptions')
+      .select('channel_id')
+      .eq(
+        'subscriber_id',
+        u.id
+      );
+
+  const ids =
+    (data || [])
+      .map(x => x.channel_id);
 
   if (!ids.length) {
-    $('#subVideos').innerHTML = `<div class="notice">No subscriptions yet.</div>`;
+
+    $('#subVideos').innerHTML =
+      `
+      <div class="notice">
+        No subscriptions yet.
+      </div>
+      `;
+
     return;
   }
 
-  const r = await s
-    .from('videos')
-    .select('*,profiles(username)')
-    .in('owner_id', ids)
-    .order('created_at', { ascending: false });
+  const r =
+    await s
+      .from('videos')
+      .select(
+        '*,profiles(username)'
+      )
+      .in(
+        'owner_id',
+        ids
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      );
 
-  $('#subVideos').innerHTML = (r.data || []).map(card).join('') || `<div class="notice">No new videos.</div>`;
+  $('#subVideos').innerHTML =
+    (r.data || [])
+      .map(card)
+      .join('') ||
+    `
+      <div class="notice">
+        No new videos.
+      </div>
+    `;
 }
 
-async function libraryPage() {
-  const s = getSb();
-  if (!$('#libraryVideos') || !s) return;
+/* =========================================
+   LIBRARY
+========================================= */
 
-  const u = await currentUser();
+async function libraryPage() {
+
+  const s = getSb();
+
+  if (!$('#libraryVideos') || !s)
+    return;
+
+  const u =
+    await currentUser();
+
   if (!u) {
-    $('#libraryVideos').innerHTML = `<div class="notice">Sign in to use your library.</div>`;
+
+    $('#libraryVideos').innerHTML =
+      `
+      <div class="notice">
+        Sign in to use your library.
+      </div>
+      `;
+
     return;
   }
 
-  const { data, error } = await s
-    .from('saved_videos')
-    .select('videos(*,profiles(username))')
-    .eq('user_id', u.id);
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('saved_videos')
+      .select(
+        'videos(*,profiles(username))'
+      )
+      .eq(
+        'user_id',
+        u.id
+      );
 
   if (error) {
-    $('#libraryVideos').innerHTML = `<div class="notice">${esc(error.message)}</div>`;
+
+    $('#libraryVideos').innerHTML =
+      `
+      <div class="notice">
+        ${esc(error.message)}
+      </div>
+      `;
+
     return;
   }
 
   $('#libraryVideos').innerHTML =
-    (data || []).map(x => x.videos).filter(Boolean).map(card).join('') ||
-    `<div class="notice">No saved videos.</div>`;
+    (data || [])
+      .map(x => x.videos)
+      .filter(Boolean)
+      .map(card)
+      .join('') ||
+    `
+      <div class="notice">
+        No saved videos.
+      </div>
+    `;
 }
 
-async function historyPage() {
-  const s = getSb();
-  if (!$('#historyVideos') || !s) return;
+/* =========================================
+   HISTORY PAGE
+========================================= */
 
-  const u = await currentUser();
+async function historyPage() {
+
+  const s = getSb();
+
+  if (!$('#historyVideos') || !s)
+    return;
+
+  const u =
+    await currentUser();
+
   if (!u) {
-    $('#historyVideos').innerHTML = `<div class="notice">Sign in to see history.</div>`;
+
+    $('#historyVideos').innerHTML =
+      `
+      <div class="notice">
+        Sign in to see history.
+      </div>
+      `;
+
     return;
   }
 
-  const { data, error } = await s
-    .from('watch_history')
-    .select('watched_at,videos(*,profiles(username))')
-    .eq('user_id', u.id)
-    .order('watched_at', { ascending: false });
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('watch_history')
+      .select(
+        'watched_at,videos(*,profiles(username))'
+      )
+      .eq(
+        'user_id',
+        u.id
+      )
+      .order(
+        'watched_at',
+        {
+          ascending: false
+        }
+      );
 
   if (error) {
-    $('#historyVideos').innerHTML = `<div class="notice">${esc(error.message)}</div>`;
+
+    $('#historyVideos').innerHTML =
+      `
+      <div class="notice">
+        ${esc(error.message)}
+      </div>
+      `;
+
     return;
   }
 
   $('#historyVideos').innerHTML =
-    (data || []).map(x => x.videos).filter(Boolean).map(card).join('') ||
-    `<div class="notice">No history yet.</div>`;
+    (data || [])
+      .map(x => x.videos)
+      .filter(Boolean)
+      .map(card)
+      .join('') ||
+    `
+      <div class="notice">
+        No history yet.
+      </div>
+    `;
 }
 
 /* =========================================
-   STUDIO (COMPLETED)
+   STUDIO
 ========================================= */
 
 async function studioPage() {
-  const s = getSb();
-  if (!$('#studioStats') || !s) return;
 
-  const u = await currentUser();
+  const s = getSb();
+
+  if (!$('#studioStats') || !s)
+    return;
+
+  const u =
+    await currentUser();
+
   if (!u) {
-    $('#studioStats').innerHTML = `<div class="notice">Sign in to open Studio.</div>`;
+
+    $('#studioStats').innerHTML =
+      `
+      <div class="notice">
+        Sign in to open Studio.
+      </div>
+      `;
+
     return;
   }
 
-  const { data, error } = await s
-    .from('videos')
-    .select('id,title,views,created_at')
-    .eq('owner_id', u.id)
-    .order('created_at', { ascending: false });
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('videos')
+      .select(
+        'id,title,views,created_at'
+      )
+      .eq(
+        'owner_id',
+        u.id
+      )
+      .order(
+        'views',
+        {
+          ascending: false
+        }
+      );
 
   if (error) {
-    $('#studioStats').innerHTML = `<div class="notice">${esc(error.message)}</div>`;
+
+    $('#studioStats').innerHTML =
+      `
+      <div class="notice">
+        ${esc(error.message)}
+      </div>
+      `;
+
     return;
   }
 
-  // Calculate stats
-  const totalUploads = data ? data.length : 0;
-  const totalViews = data ? data.reduce((acc, curr) => acc + (curr.views || 0), 0) : 0;
+  const v =
+    data || [];
 
-  $('#studioStats').innerHTML = `
-    <div class="statsGrid">
+  const total =
+    v.reduce(
+      (a, x) =>
+        a + Number(x.views || 0),
+      0
+    );
+
+  $('#studioStats').innerHTML =
+    `
+    <div class="statGrid">
+
       <div class="statCard">
-        <h3>${fmt(totalUploads)}</h3>
-        <p class="muted">Total Videos</p>
+        <strong>
+          ${fmt(v.length)}
+        </strong>
+        <span>
+          Videos
+        </span>
       </div>
+
       <div class="statCard">
-        <h3>${fmt(totalViews)}</h3>
-        <p class="muted">Total Views</p>
+        <strong>
+          ${fmt(total)}
+        </strong>
+        <span>
+          Total views
+        </span>
       </div>
+
+      <div class="statCard">
+        <strong>
+          ${fmt(v[0]?.views || 0)}
+        </strong>
+        <span>
+          Top video views
+        </span>
+      </div>
+
     </div>
-  `;
 
-  const listElement = $('#studioVideoList');
-  if (listElement) {
-    if (!data || data.length === 0) {
-      listElement.innerHTML = `<div class="notice">You haven't uploaded any videos yet.</div>`;
+    <div class="panel">
+
+      <h2>
+        Top videos
+      </h2>
+
+      ${
+        v.slice(0, 10)
+          .map(
+            (x, i) => `
+              <a
+                class="studioRow"
+                href="watch.html?id=${x.id}"
+              >
+                <span>
+                  #${i + 1}
+                </span>
+
+                <span>
+                  ${esc(x.title)}
+                </span>
+
+                <b>
+                  ${fmt(x.views)} views
+                </b>
+              </a>
+            `
+          )
+          .join('') ||
+        '<p class="muted">Upload your first video.</p>'
+      }
+
+    </div>
+    `;
+}
+
+/* =========================================
+   CATEGORY CHIPS
+========================================= */
+
+function initChips() {
+
+  document
+    .querySelectorAll('.chip')
+    .forEach(b => {
+
+      b.onclick = () => {
+
+        document
+          .querySelectorAll('.chip')
+          .forEach(x =>
+            x.classList.remove(
+              'active'
+            )
+          );
+
+        b.classList.add(
+          'active'
+        );
+
+        loadVideos(
+          '#videoGrid',
+          '',
+          40,
+          b.dataset.category || ''
+        );
+      };
+
+    });
+}
+
+/* =========================================
+   INIT
+========================================= */
+
+async function init() {
+
+  await header();
+
+  const m =
+    $('#menuBtn');
+
+  const side =
+    $('.side');
+
+  if (m && side) {
+
+    m.onclick = e => {
+
+      e.stopPropagation();
+
+      side.classList.toggle(
+        'open'
+      );
+    };
+
+    side
+      .querySelectorAll('a')
+      .forEach(a => {
+
+        a.onclick = () =>
+          side.classList.remove(
+            'open'
+          );
+
+      });
+
+    document.addEventListener(
+      'click',
+      e => {
+
+        if (
+          side.classList.contains('open') &&
+          !side.contains(e.target) &&
+          !m.contains(e.target)
+        ) {
+
+          side.classList.remove(
+            'open'
+          );
+        }
+      }
+    );
+  }
+
+  $('#searchBtn')
+    ?.addEventListener(
+      'click',
+      searchGo
+    );
+
+  $('#topSearch')
+    ?.addEventListener(
+      'keydown',
+      e => {
+
+        if (e.key === 'Enter') {
+          searchGo();
+        }
+      }
+    );
+
+  $('#themeBtn')
+    ?.addEventListener(
+      'click',
+      toggleTheme
+    );
+
+  $('#mobileSearchBtn')
+    ?.addEventListener(
+      'click',
+      () =>
+        $('#searchPanel')
+          ?.classList.toggle(
+            'show'
+          )
+    );
+
+  authPage();
+  uploadPage();
+  watchPage();
+  channelPage();
+  subscriptionsPage();
+  libraryPage();
+  historyPage();
+  studioPage();
+
+  if ($('#videoGrid')) {
+    loadVideos();
+  }
+
+  if ($('#allVideos')) {
+
+    const q =
+      new URLSearchParams(
+        location.search
+      ).get('q') || '';
+
+    if ($('#query')) {
+      $('#query').textContent =
+        q
+          ? `Search results for “${q}”`
+          : 'Search';
+    }
+
+    loadVideos(
+      '#allVideos',
+      q
+    );
+  }
+
+  if ($('#trending')) {
+    loadTrending();
+  }
+
+  initChips();
+}
+
+/* =========================================
+   SEARCH
+========================================= */
+
+function searchGo() {
+
+  const q =
+    $('#topSearch')
+      ?.value
+      .trim();
+
+  if (q) {
+
+    location.href =
+      'search.html?q=' +
+      encodeURIComponent(q);
+  }
+}
+
+document.addEventListener(
+  'DOMContentLoaded',
+  init
+);
+
+/* =========================================
+   MINI PLAYER
+========================================= */
+
+document.addEventListener(
+  'scroll',
+  () => {
+
+    const vid =
+      document.querySelector(
+        'video'
+      );
+
+    if (
+      !vid ||
+      vid.paused ||
+      vid.currentTime < 1
+    ) {
       return;
     }
 
-    listElement.innerHTML = `
-      <table class="studioTable">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Uploaded</th>
-            <th>Views</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.map(video => `
-            <tr>
-              <td><strong>${esc(video.title)}</strong></td>
-              <td>${date(video.created_at)}</td>
-              <td>${fmt(video.views)}</td>
-              <td>
-                <button onclick="deleteVideo('${video.id}')" class="btnDanger">Delete</button>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+    const nearTop =
+      vid.getBoundingClientRect()
+        .bottom < 0;
+
+    let mini =
+      document.getElementById(
+        'divineMiniPlayer'
+      );
+
+    if (nearTop) {
+
+      if (!mini) {
+
+        mini =
+          vid.cloneNode(true);
+
+        mini.id =
+          'divineMiniPlayer';
+
+        mini.muted = true;
+        mini.controls = true;
+
+        mini.style.cssText =
+          `
+          position:fixed;
+          right:12px;
+          bottom:76px;
+          width:180px;
+          aspect-ratio:16/9;
+          z-index:9999;
+          background:#000;
+          border-radius:12px;
+          box-shadow:0 8px 30px #0008;
+          `;
+
+        document.body.appendChild(
+          mini
+        );
+      }
+
+      mini.play().catch(
+        () => {}
+      );
+
+    } else if (mini) {
+
+      mini.remove();
+    }
   }
-}
-
-async function deleteVideo(videoId) {
-  if (!confirm('Are you sure you want to delete this video?')) return;
-
-  const s = getSb();
-  const { error } = await s.from('videos').delete().eq('id', videoId);
-
-  if (error) {
-    toast(`Failed to delete: ${error.message}`);
-  } else {
-    toast('Video deleted.');
-    studioPage(); // Reload the list
-  }
-}
+);
