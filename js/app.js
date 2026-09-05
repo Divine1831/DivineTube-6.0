@@ -33,7 +33,96 @@ async function header(){const s=getSb(),u=await currentUser();if($('#avatar'))$(
 async function loadVideos(target='#videoGrid',query='',limit=40,category=''){const s=getSb(),e=$(target);if(!e||!s)return;loading(e);let q=s.from('videos').select('*,profiles(username)').order('created_at',{ascending:false}).limit(limit);if(query)q=q.ilike('title',`%${query}%`);if(category)q=q.eq('category',category);const{data,error}=await q;if(error){e.innerHTML=`<div class="notice">Supabase error: ${esc(error.message)}</div>`;return}e.innerHTML=(data||[]).map(card).join('')||'<div class="notice">No videos found.</div>'}
 async function authPage(){const s=getSb(),f=$('#authForm');if(!f||!s)return;f.onsubmit=async e=>{e.preventDefault();const signup=$('#signup').checked,email=$('#email').value.trim(),password=$('#password').value,user=$('#username')?.value.trim();$('#msg').textContent='Please wait…';const r=signup?await s.auth.signUp({email,password,options:{data:{username:user||email.split('@')[0]}}}):await s.auth.signInWithPassword({email,password});if(r.error)$('#msg').textContent=r.error.message;else if(signup&&!r.data.session)$('#msg').textContent='Account created. Check your email if confirmation is enabled.';else location.href='index.html'}}
 
-async function uploadPage(){const s=getSb(),f=$('#uploadForm');if(!f||!s)return;const u=await currentUser();if(!u){$('#uploadGate').innerHTML='<div class="notice">Please sign in before uploading.</div>';f.style.display='none';return}const vi=$('#video'),ti=$('#thumb');ti?.addEventListener('change',()=>{const x=ti.files[0];if(x){$('#preview').src=URL.createObjectURL(x);$('#preview').classList.remove('hidden')}});f.onsubmit=async e=>{e.preventDefault();const video=vi.files[0],thumb=ti.files[0],title=$('#title').value.trim(),desc=$('#desc').value.trim(),category=$('#category').value;if(!video||!title)return $('#msg').textContent='Title and video are required.';$('#msg').textContent='Uploading…';const safe=n=>n.replace(/[^a-zA-Z0-9._-]/g,'_'),vp=`${u.id}/${crypto.randomUUID()}-${safe(video.name)}`;let r=await s.storage.from('videos').upload(vp,video,{upsert:false,contentType:video.type||'video/mp4'});if(r.error)return $('#msg').textContent=r.error.message;const videoUrl=s.storage.from('videos').getPublicUrl(vp).data.publicUrl;let thumbUrl=null;if(thumb){const tp=`${u.id}/${crypto.randomUUID()}-${safe(thumb.name)}`;r=await s.storage.from('thumbnails').upload(tp,thumb,{upsert:false,contentType:thumb.type||'image/jpeg'});if(r.error)return $('#msg').textContent=r.error.message;thumbUrl=s.storage.from('thumbnails').getPublicUrl(tp).data.publicUrl}r=await s.from('videos').insert({owner_id:u.id,title,description:desc,category,video_url:videoUrl,thumbnail_url:thumbUrl}).select().single();if(r.error)return $('#msg').textContent=r.error.message;$('#msg').textContent='Published!';setTimeout(()=>location.href='watch.html?id='+r.data.id,700)}}
+/* Extract frame from uploaded video file */
+function extractVideoFrame(file){
+  return new Promise(resolve => {
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.src = URL.createObjectURL(file);
+    v.currentTime = 1;
+    v.onloadeddata = () => {
+      const c = document.createElement('canvas');
+      c.width = v.videoWidth || 640;
+      c.height = v.videoHeight || 360;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(v, 0, 0, c.width, c.height);
+      c.toBlob(b => {
+        URL.revokeObjectURL(v.src);
+        resolve(b);
+      }, 'image/jpeg', 0.85);
+    };
+    v.onerror = () => resolve(null);
+  });
+}
+
+async function uploadPage(){
+  const s=getSb(), f=$('#uploadForm');
+  if(!f||!s) return;
+  const u=await currentUser();
+  if(!u){
+    $('#uploadGate').innerHTML='<div class="notice">Please sign in before uploading.</div>';
+    f.style.display='none';
+    return;
+  }
+  const vi=$('#video'), ti=$('#thumb');
+  ti?.addEventListener('change', () => {
+    const x = ti.files[0];
+    if(x){
+      $('#preview').src = URL.createObjectURL(x);
+      $('#preview').classList.remove('hidden');
+    }
+  });
+
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const video = vi.files[0],
+          customThumb = ti?.files[0],
+          title = $('#title').value.trim(),
+          desc = $('#desc').value.trim(),
+          category = $('#category').value;
+
+    if(!video || !title) return $('#msg').textContent = 'Title and video are required.';
+
+    $('#msg').textContent = 'Uploading video…';
+    const safe = n => n.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const vp = `${u.id}/${crypto.randomUUID()}-${safe(video.name)}`;
+
+    let r = await s.storage.from('videos').upload(vp, video, {upsert: false, contentType: video.type || 'video/mp4'});
+    if(r.error) return $('#msg').textContent = r.error.message;
+
+    const videoUrl = s.storage.from('videos').getPublicUrl(vp).data.publicUrl;
+    let thumbUrl = null;
+
+    let thumbBlob = customThumb;
+    if(!thumbBlob){
+      $('#msg').textContent = 'Extracting video frame thumbnail…';
+      thumbBlob = await extractVideoFrame(video);
+    }
+
+    if(thumbBlob){
+      $('#msg').textContent = 'Uploading thumbnail…';
+      const tp = `${u.id}/${crypto.randomUUID()}-thumb.jpg`;
+      r = await s.storage.from('thumbnails').upload(tp, thumbBlob, {upsert: false, contentType: 'image/jpeg'});
+      if(!r.error){
+        thumbUrl = s.storage.from('thumbnails').getPublicUrl(tp).data.publicUrl;
+      }
+    }
+
+    r = await s.from('videos').insert({
+      owner_id: u.id,
+      title,
+      description: desc,
+      category,
+      video_url: videoUrl,
+      thumbnail_url: thumbUrl
+    }).select().single();
+
+    if(r.error) return $('#msg').textContent = r.error.message;
+
+    $('#msg').textContent = 'Published!';
+    setTimeout(() => location.href = 'watch.html?id=' + r.data.id, 700);
+  };
+}
 
 async function watchPage(){const s=getSb(),id=new URLSearchParams(location.search).get('id');if(!id||!s)return;const{data:v,error}=await s.from('videos').select('*,profiles(username,avatar_url)').eq('id',id).single();if(error||!v)return;if($('#title'))$('#title').textContent=v.title;if($('#desc'))$('#desc').textContent=v.description||'No description.';if($('#views'))$('#views').textContent=`${fmt(v.views)} views • ${date(v.created_at)}`;
 if($('#player')){
