@@ -11,7 +11,6 @@ function card(v){
   const n = v.profiles?.username || 'Creator';
   const videoSrc = esc(v.video_url || '');
   const thumbSrc = v.thumbnail_url ? esc(v.thumbnail_url) : '';
-  const duration = v.duration ? esc(v.duration) : '';
 
   return `<article class="card">
     <a href="watch.html?id=${v.id}">
@@ -20,7 +19,6 @@ function card(v){
           ? `<img loading="lazy" src="${thumbSrc}" alt="${esc(v.title)}">`
           : `<video src="${videoSrc}#t=0.5" preload="metadata" muted playsinline></video>`
         }
-        ${duration ? `<span class="duration">${duration}</span>` : ''}
       </div>
       <div class="meta">
         ${avatar(n)}
@@ -38,6 +36,7 @@ async function header(){const s=getSb(),u=await currentUser();if($('#avatar'))$(
 async function loadVideos(target='#videoGrid',query='',limit=40,category=''){const s=getSb(),e=$(target);if(!e||!s)return;loading(e);let q=s.from('videos').select('*,profiles(username)').order('created_at',{ascending:false}).limit(limit);if(query)q=q.ilike('title',`%${query}%`);if(category)q=q.eq('category',category);const{data,error}=await q;if(error){e.innerHTML=`<div class="notice">Supabase error: ${esc(error.message)}</div>`;return}e.innerHTML=(data||[]).map(card).join('')||'<div class="notice">No videos found.</div>'}
 async function authPage(){const s=getSb(),f=$('#authForm');if(!f||!s)return;f.onsubmit=async e=>{e.preventDefault();const signup=$('#signup').checked,email=$('#email').value.trim(),password=$('#password').value,user=$('#username')?.value.trim();$('#msg').textContent='Please wait…';const r=signup?await s.auth.signUp({email,password,options:{data:{username:user||email.split('@')[0]}}}):await s.auth.signInWithPassword({email,password});if(r.error)$('#msg').textContent=r.error.message;else if(signup&&!r.data.session)$('#msg').textContent='Account created. Check your email if confirmation is enabled.';else location.href='index.html'}}
 
+/* Extract frame from uploaded video file */
 function extractVideoFrame(file){
   return new Promise(resolve => {
     const v = document.createElement('video');
@@ -58,21 +57,6 @@ function extractVideoFrame(file){
       }, 'image/jpeg', 0.85);
     };
     v.onerror = () => resolve(null);
-  });
-}
-
-function getVideoDuration(file){
-  return new Promise(resolve => {
-    const v = document.createElement('video');
-    v.preload = 'metadata';
-    v.src = URL.createObjectURL(file);
-    v.onloadedmetadata = () => {
-      URL.revokeObjectURL(v.src);
-      const sec = Math.floor(v.duration % 60);
-      const min = Math.floor(v.duration / 60);
-      resolve(`${min}:${sec < 10 ? '0' : ''}${sec}`);
-    };
-    v.onerror = () => resolve('');
   });
 }
 
@@ -129,16 +113,13 @@ async function uploadPage(){
       }
     }
 
-    const durationStr = await getVideoDuration(video);
-
     r = await s.from('videos').insert({
       owner_id: u.id,
       title,
       description: desc,
       category,
       video_url: videoUrl,
-      thumbnail_url: thumbUrl,
-      duration: durationStr
+      thumbnail_url: thumbUrl
     }).select().single();
 
     if(r.error) return $('#msg').textContent = r.error.message;
@@ -148,77 +129,13 @@ async function uploadPage(){
   };
 }
 
-async function watchPage(){
-  const s=getSb(),id=new URLSearchParams(location.search).get('id');
-  if(!id||!s)return;
-  const{data:v,error}=await s.from('videos').select('*,profiles(username,avatar_url)').eq('id',id).single();
-  if(error||!v)return;
-  
-  if($('#title'))$('#title').textContent=v.title;
-  if($('#desc'))$('#desc').textContent=v.description||'No description.';
-  if($('#views'))$('#views').textContent=`${fmt(v.views)} views • ${date(v.created_at)}`;
-  
-  if($('#player')){
-    const player = $('#player');
-    player.src = v.video_url;
-    if (v.thumbnail_url) player.poster = v.thumbnail_url;
-
-    const savedTime = localStorage.getItem(`dt_pos_${v.id}`);
-    if(savedTime){
-      player.currentTime = parseFloat(savedTime);
-    }
-
-    player.ontimeupdate = () => {
-      if(player.currentTime > 2){
-        localStorage.setItem(`dt_pos_${v.id}`, player.currentTime);
-      }
-    };
-  }
-
-  if($('#channel'))$('#channel').textContent=v.profiles?.username||'Creator';
-  if($('#category'))$('#category').textContent=v.category||'General';
-  loadVideos('#related','',8);
-  await s.rpc('increment_view',{video_uuid:v.id});
-  await recordHistory(v.id);
-  await updateLike(id);
-  await updateSave(id);
-  loadComments(id);
-
-  $('#like')?.addEventListener('click',async()=>{
-    const u=await currentUser();
-    if(!u)return location.href='auth.html';
-    const{data}=await s.from('likes').select('video_id').eq('video_id',id).eq('user_id',u.id).maybeSingle();
-    if(data)await s.from('likes').delete().eq('video_id',id).eq('user_id',u.id);
-    else await s.from('likes').insert({video_id:id,user_id:u.id});
-    updateLike(id);
-  });
-
-  $('#save')?.addEventListener('click',async()=>{
-    const u=await currentUser();
-    if(!u)return location.href='auth.html';
-    const{data}=await s.from('saved_videos').select('video_id').eq('video_id',id).eq('user_id',u.id).maybeSingle();
-    if(data)await s.from('saved_videos').delete().eq('video_id',id).eq('user_id',u.id);
-    else await s.from('saved_videos').insert({video_id:id,user_id:u.id});
-    updateSave(id);
-  });
-
-  $('#share')?.addEventListener('click',async()=>{
-    try{await navigator.clipboard.writeText(location.href);toast('Link copied')}catch{toast('Copy the page URL')}
-  });
-
-  $('#subscribe')?.addEventListener('click',()=>subscribe(v.owner_id));
-  
-  $('#commentBtn')?.addEventListener('click',async()=>{
-    const u=await currentUser();
-    if(!u)return location.href='auth.html';
-    const content=$('#commentInput').value.trim();
-    if(!content)return;
-    const r=await s.from('comments').insert({video_id:id,user_id:u.id,content});
-    if(r.error)return toast(r.error.message);
-    $('#commentInput').value='';
-    loadComments(id);
-  });
+async function watchPage(){const s=getSb(),id=new URLSearchParams(location.search).get('id');if(!id||!s)return;const{data:v,error}=await s.from('videos').select('*,profiles(username,avatar_url)').eq('id',id).single();if(error||!v)return;if($('#title'))$('#title').textContent=v.title;if($('#desc'))$('#desc').textContent=v.description||'No description.';if($('#views'))$('#views').textContent=`${fmt(v.views)} views • ${date(v.created_at)}`;
+if($('#player')){
+  const player = $('#player');
+  player.src = v.video_url;
+  if (v.thumbnail_url) player.poster = v.thumbnail_url;
 }
+if($('#channel'))$('#channel').textContent=v.profiles?.username||'Creator';if($('#category'))$('#category').textContent=v.category||'General';loadVideos('#related','',8);await s.rpc('increment_view',{video_uuid:v.id});await recordHistory(v.id);await updateLike(id);await updateSave(id);loadComments(id);$('#like')?.addEventListener('click',async()=>{const u=await currentUser();if(!u)return location.href='auth.html';const{data}=await s.from('likes').select('video_id').eq('video_id',id).eq('user_id',u.id).maybeSingle();if(data)await s.from('likes').delete().eq('video_id',id).eq('user_id',u.id);else await s.from('likes').insert({video_id:id,user_id:u.id});updateLike(id)});$('#save')?.addEventListener('click',async()=>{const u=await currentUser();if(!u)return location.href='auth.html';const{data}=await s.from('saved_videos').select('video_id').eq('video_id',id).eq('user_id',u.id).maybeSingle();if(data)await s.from('saved_videos').delete().eq('video_id',id).eq('user_id',u.id);else await s.from('saved_videos').insert({video_id:id,user_id:u.id});updateSave(id)});$('#share')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);toast('Link copied')}catch{toast('Copy the page URL')}});$('#subscribe')?.addEventListener('click',()=>subscribe(v.owner_id));$('#commentBtn')?.addEventListener('click',async()=>{const u=await currentUser();if(!u)return location.href='auth.html';const content=$('#commentInput').value.trim();if(!content)return;const r=await s.from('comments').insert({video_id:id,user_id:u.id,content});if(r.error)return toast(r.error.message);$('#commentInput').value='';loadComments(id)})}
 
 async function recordHistory(id){const s=getSb(),u=await currentUser();if(u&&s)await s.from('watch_history').upsert({user_id:u.id,video_id:id,watched_at:new Date().toISOString()},{onConflict:'user_id,video_id'})}
 async function updateLike(id){const s=getSb(),u=await currentUser(),b=$('#like');if(!b||!s)return;if(!u)return b.textContent='👍 Like';const{data}=await s.from('likes').select('video_id').eq('video_id',id).eq('user_id',u.id).maybeSingle();b.textContent=data?'👍 Liked':'👍 Like'}
@@ -239,6 +156,7 @@ $('#mobileSearchBtn')?.addEventListener('click',()=>$('#searchPanel')?.classList
 function searchGo(){const q=$('#topSearch')?.value.trim();if(q)location.href='search.html?q='+encodeURIComponent(q)}
 document.addEventListener('DOMContentLoaded',init);
 
+// DivineTube Ultimate: lightweight picture-in-page mini player
 document.addEventListener('scroll',()=>{
  const vid=document.querySelector('video');
  if(!vid || vid.paused || vid.currentTime<1) return;
