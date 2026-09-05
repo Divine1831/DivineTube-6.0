@@ -37,7 +37,10 @@ a {
   text-decoration: none;
 }
 
-button, input, textarea, select {
+button,
+input,
+textarea,
+select {
   font: inherit;
 }
 
@@ -70,7 +73,9 @@ button {
   background: rgba(255, 255, 255, 0.85);
 }
 
-.hamb, .topIcon, .uploadTop {
+.hamb,
+.topIcon,
+.uploadTop {
   border: 0;
   background: transparent;
   color: inherit;
@@ -83,7 +88,9 @@ button {
   transition: var(--transition);
 }
 
-.hamb:hover, .topIcon:hover, .uploadTop:hover {
+.hamb:hover,
+.topIcon:hover,
+.uploadTop:hover {
   background: var(--surface2);
 }
 
@@ -131,7 +138,10 @@ button {
   font-size: 14px;
 }
 
-/* SEARCH OVERLAY */
+/* =========================
+   SEARCH
+========================= */
+
 .searchPanel {
   position: fixed;
   top: 58px;
@@ -169,7 +179,7 @@ button {
 }
 
 /* =========================
-   SIDEBAR & BOTTOM NAVIGATION
+   SIDEBAR / BOTTOM NAV
 ========================= */
 
 .side {
@@ -233,7 +243,7 @@ button {
 }
 
 /* =========================
-   PAGE CONTAINER & HERO
+   PAGE
 ========================= */
 
 .page {
@@ -246,7 +256,13 @@ button {
   padding: 28px 20px;
   border: 1px solid var(--line);
   border-radius: 20px;
-  background: radial-gradient(circle at 90% 15%, rgba(255, 49, 83, 0.15), transparent 50%), var(--surface);
+  background:
+    radial-gradient(
+      circle at 90% 15%,
+      rgba(255, 49, 83, 0.15),
+      transparent 50%
+    ),
+    var(--surface);
   margin-bottom: 24px;
   display: flex;
   align-items: center;
@@ -276,7 +292,8 @@ button {
   display: none;
 }
 
-.heroActions, .actions {
+.heroActions,
+.actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -304,11 +321,11 @@ button {
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #ffffff;
+  color: #fff;
 }
 
 /* =========================
-   SECTION HEAD & CHIPS
+   SECTION HEAD / CHIPS
 ========================= */
 
 .sectionHead {
@@ -318,7 +335,8 @@ button {
   margin: 20px 2px 12px;
 }
 
-.sectionHead h1, .sectionHead h2 {
+.sectionHead h1,
+.sectionHead h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 800;
@@ -361,10 +379,11 @@ button {
 }
 
 /* =========================
-   VIDEO CARDS & GRID
+   VIDEO CARDS
 ========================= */
 
-.videoGrid, .skeletonGrid {
+.videoGrid,
+.skeletonGrid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
@@ -375,34 +394,70 @@ button {
   flex-direction: column;
   border-radius: var(--radius-card);
   transition: var(--transition);
+  min-width: 0;
 }
 
 .card .thumb {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: var(--surface2);
+  background: #000;
   border-radius: var(--radius-card);
   overflow: hidden;
   border: 1px solid var(--line);
 }
 
-.thumb img,
-.thumb video {
+/* Real thumbnail image */
+.card .thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   display: block;
-  transition: transform 0.3s ease;
-  pointer-events: none;
+  object-fit: cover;
+  object-position: center;
+  background: #000;
 }
 
+/* Fallback video element */
+.card .thumb video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  background: #000;
+}
+
+/* Hover effect */
 .card:hover .thumb img,
 .card:hover .thumb video {
   transform: scale(1.03);
 }
 
+.thumb img,
+.thumb video {
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+
+/* Duration badge */
+.thumb .duration {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.82);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Fallback */
 .thumbFallback {
+  width: 100%;
   height: 100%;
   display: grid;
   place-items: center;
@@ -410,10 +465,15 @@ button {
   font-size: 36px;
 }
 
+/* =========================
+   VIDEO META
+========================= */
+
 .meta {
   display: flex;
   gap: 12px;
   padding-top: 12px;
+  min-width: 0;
 }
 
 .mini {
@@ -449,6 +509,10 @@ button {
   font-size: 13px;
 }
 
+/* =========================
+   SKELETON
+========================= */
+
 .skeleton {
   aspect-ratio: 16 / 9;
   border-radius: var(--radius-card);
@@ -457,11 +521,13 @@ button {
 }
 
 @keyframes pulse {
-  50% { opacity: 0.5; }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* =========================
-   FORMS, WATCH & STUDIO
+   FORMS
 ========================= */
 
 .authWrap {
@@ -470,7 +536,11 @@ button {
   place-items: center;
 }
 
-.authCard, .formCard, .panel, .statCard, .channelHero {
+.authCard,
+.formCard,
+.panel,
+.statCard,
+.channelHero {
   border: 1px solid var(--line);
   background: var(--surface);
   border-radius: 18px;
@@ -481,7 +551,11 @@ button {
   width: min(450px, 100%);
 }
 
-.authCard input, .formCard input, .formCard textarea, .formCard select, .commentBox input {
+.authCard input,
+.formCard input,
+.formCard textarea,
+.formCard select,
+.commentBox input {
   width: 100%;
   padding: 12px 14px;
   margin: 7px 0 13px;
@@ -515,6 +589,10 @@ button {
   border-radius: 12px;
 }
 
+/* =========================
+   WATCH PAGE
+========================= */
+
 .hidden {
   display: none;
 }
@@ -525,13 +603,21 @@ button {
   text-align: center;
 }
 
+/* Main video player */
 .player {
   width: 100%;
   aspect-ratio: 16 / 9;
   max-height: 72vh;
+  display: block;
   background: #000;
   border-radius: 14px;
   border: 0;
+  object-fit: contain;
+}
+
+/* Make the player poster fill the player */
+.player::poster {
+  object-fit: cover;
 }
 
 .watchLayout {
@@ -587,6 +673,10 @@ button {
   gap: 14px;
 }
 
+/* =========================
+   CHANNEL
+========================= */
+
 .channelHero {
   display: flex;
   gap: 16px;
@@ -604,6 +694,10 @@ button {
   place-items: center;
   font-weight: 800;
 }
+
+/* =========================
+   STUDIO
+========================= */
 
 .statGrid {
   display: grid;
@@ -630,14 +724,18 @@ button {
   border-bottom: 1px solid var(--line);
 }
 
+/* =========================
+   TOAST
+========================= */
+
 .toast {
   position: fixed;
   left: 50%;
   bottom: 88px;
   transform: translate(-50%, 20px);
   opacity: 0;
-  background: #ffffff;
-  color: #111111;
+  background: #fff;
+  color: #111;
   padding: 11px 18px;
   border-radius: 12px;
   z-index: 50;
@@ -653,16 +751,17 @@ button {
 }
 
 body.light .toast {
-  background: #111111;
-  color: #ffffff;
+  background: #111;
+  color: #fff;
 }
 
 /* =========================
-   RESPONSIVE LAYOUT BREAKPOINTS
+   RESPONSIVE
 ========================= */
 
 @media (min-width: 580px) {
-  .videoGrid, .skeletonGrid {
+  .videoGrid,
+  .skeletonGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -687,6 +786,7 @@ body.light .toast {
     background: var(--surface);
     border-right: 1px solid var(--line);
     z-index: 20;
+    overflow-y: auto;
   }
 
   .nav {
@@ -707,7 +807,8 @@ body.light .toast {
     color: var(--text);
   }
 
-  .nav:hover, .nav.active {
+  .nav:hover,
+  .nav.active {
     background: var(--surface2);
     color: var(--accent);
   }
@@ -724,7 +825,8 @@ body.light .toast {
     max-width: calc(100vw - 220px);
   }
 
-  .videoGrid, .skeletonGrid {
+  .videoGrid,
+  .skeletonGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -755,7 +857,8 @@ body.light .toast {
 }
 
 @media (min-width: 1200px) {
-  .videoGrid, .skeletonGrid {
+  .videoGrid,
+  .skeletonGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
@@ -784,5 +887,9 @@ body.light .toast {
 
   .watchLayout h1 {
     font-size: 20px;
+  }
+
+  .card .thumb {
+    border-radius: 10px;
   }
 }
