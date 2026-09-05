@@ -1,1 +1,322 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Auth | DivineTube</title><link rel="stylesheet" href="css/style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/layout.js" defer></script><script src="js/app.js" defer></script></head><body><div id="app"></div><main class="page"><div class="authWrap"><div class="authCard"><div class="brand">▶ Divine<span>Tube</span></div><h1>Welcome</h1><form id="authForm"><input id="username" placeholder="Username (sign up)"><input id="email" type="email" placeholder="Email" required><input id="password" type="password" placeholder="Password" minlength="6" required><label class="switchRow"><input id="signup" type="checkbox"> Create account</label><button class="btn primary" type="submit">Continue</button></form><p id="msg" class="notice"></p></div></div></main><div id="toast" class="toast"></div></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Login | DivineTube</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/layout.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+
+<body>
+
+  <div id="app"></div>
+
+  <main class="page">
+
+    <div class="authWrap">
+
+      <div class="authCard">
+
+        <!-- LOGO -->
+        <div class="brand">
+          ▶ Divine<span>Tube</span>
+        </div>
+
+        <h1 id="authTitle">Welcome back</h1>
+
+        <p class="muted" id="authSubtitle">
+          Sign in to continue to DivineTube.
+        </p>
+
+        <!-- AUTH FORM -->
+        <form id="authForm">
+
+          <!-- USERNAME -->
+          <div id="usernameGroup" class="hidden">
+            <label>
+              Username
+              <input
+                id="username"
+                type="text"
+                placeholder="Choose a username"
+                maxlength="30"
+              >
+            </label>
+          </div>
+
+          <!-- EMAIL -->
+          <label>
+            Email
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              autocomplete="email"
+              required
+            >
+          </label>
+
+          <!-- PASSWORD -->
+          <label>
+            Password
+            <div style="position:relative;">
+              <input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                minlength="6"
+                autocomplete="current-password"
+                required
+                style="padding-right:55px;"
+              >
+
+              <button
+                type="button"
+                id="showPassword"
+                aria-label="Show password"
+                style="
+                  position:absolute;
+                  right:8px;
+                  top:50%;
+                  transform:translateY(-50%);
+                  border:0;
+                  background:transparent;
+                  color:inherit;
+                  width:40px;
+                  height:40px;
+                "
+              >
+                👁
+              </button>
+            </div>
+          </label>
+
+          <!-- FORGOT PASSWORD -->
+          <div
+            id="forgotRow"
+            style="
+              text-align:right;
+              margin:-5px 0 14px;
+            "
+          >
+            <button
+              type="button"
+              id="forgotPassword"
+              style="
+                border:0;
+                background:transparent;
+                color:var(--accent);
+                padding:0;
+                font-size:13px;
+              "
+            >
+              Forgot password?
+            </button>
+          </div>
+
+          <!-- SUBMIT -->
+          <button
+            id="authSubmit"
+            class="btn primary"
+            type="submit"
+            style="width:100%;"
+          >
+            Log in
+          </button>
+
+        </form>
+
+        <!-- MESSAGE -->
+        <p id="msg" class="notice"></p>
+
+        <!-- SWITCH LOGIN / SIGNUP -->
+        <div
+          style="
+            text-align:center;
+            margin-top:15px;
+          "
+        >
+          <span
+            class="muted"
+            id="switchText"
+          >
+            Don't have an account?
+          </span>
+
+          <button
+            type="button"
+            id="switchAuth"
+            style="
+              border:0;
+              background:transparent;
+              color:var(--accent);
+              font-weight:700;
+              padding:0;
+              margin-left:5px;
+            "
+          >
+            Create account
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+
+    const signup =
+      document.getElementById('signup');
+
+    const usernameGroup =
+      document.getElementById('usernameGroup');
+
+    const username =
+      document.getElementById('username');
+
+    const password =
+      document.getElementById('password');
+
+    const showPassword =
+      document.getElementById('showPassword');
+
+    const switchAuth =
+      document.getElementById('switchAuth');
+
+    const switchText =
+      document.getElementById('switchText');
+
+    const authTitle =
+      document.getElementById('authTitle');
+
+    const authSubtitle =
+      document.getElementById('authSubtitle');
+
+    const authSubmit =
+      document.getElementById('authSubmit');
+
+    const forgotRow =
+      document.getElementById('forgotRow');
+
+    let isSignup = false;
+
+    function updateAuthMode() {
+
+      isSignup = !isSignup;
+
+      if (isSignup) {
+
+        authTitle.textContent =
+          'Create your account';
+
+        authSubtitle.textContent =
+          'Join DivineTube and start watching.';
+
+        usernameGroup.classList.remove(
+          'hidden'
+        );
+
+        username.required = true;
+
+        password.autocomplete =
+          'new-password';
+
+        authSubmit.textContent =
+          'Create account';
+
+        forgotRow.style.display =
+          'none';
+
+        switchText.textContent =
+          'Already have an account?';
+
+        switchAuth.textContent =
+          'Log in';
+
+        document.title =
+          'Create Account | DivineTube';
+
+      } else {
+
+        authTitle.textContent =
+          'Welcome back';
+
+        authSubtitle.textContent =
+          'Sign in to continue to DivineTube.';
+
+        usernameGroup.classList.add(
+          'hidden'
+        );
+
+        username.required = false;
+
+        password.autocomplete =
+          'current-password';
+
+        authSubmit.textContent =
+          'Log in';
+
+        forgotRow.style.display =
+          '';
+
+        switchText.textContent =
+          "Don't have an account?";
+
+        switchAuth.textContent =
+          'Create account';
+
+        document.title =
+          'Login | DivineTube';
+      }
+
+      document.getElementById('msg').textContent =
+        '';
+    }
+
+    switchAuth.addEventListener(
+      'click',
+      updateAuthMode
+    );
+
+    showPassword.addEventListener(
+      'click',
+      () => {
+
+        if (
+          password.type ===
+          'password'
+        ) {
+
+          password.type =
+            'text';
+
+          showPassword.textContent =
+            '🙈';
+
+        } else {
+
+          password.type =
+            'password';
+
+          showPassword.textContent =
+            '👁';
+        }
+      }
+    );
+
+  </script>
+
+</body>
+</html>
