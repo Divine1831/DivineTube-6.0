@@ -407,7 +407,6 @@ button {
   border: 1px solid var(--line);
 }
 
-/* Real thumbnail image */
 .card .thumb img {
   width: 100%;
   height: 100%;
@@ -415,9 +414,9 @@ button {
   object-fit: cover;
   object-position: center;
   background: #000;
+  transition: transform 0.3s ease;
 }
 
-/* Fallback video element */
 .card .thumb video {
   width: 100%;
   height: 100%;
@@ -425,21 +424,14 @@ button {
   object-fit: cover;
   object-position: center;
   background: #000;
+  transition: transform 0.3s ease;
 }
 
-/* Hover effect */
 .card:hover .thumb img,
 .card:hover .thumb video {
   transform: scale(1.03);
 }
 
-.thumb img,
-.thumb video {
-  transition: transform 0.3s ease;
-  pointer-events: none;
-}
-
-/* Duration badge */
 .thumb .duration {
   position: absolute;
   bottom: 8px;
@@ -455,7 +447,10 @@ button {
   z-index: 2;
 }
 
-/* Fallback */
+.youtubeBadge {
+  background: var(--accent);
+}
+
 .thumbFallback {
   width: 100%;
   height: 100%;
@@ -590,7 +585,7 @@ button {
 }
 
 /* =========================
-   WATCH PAGE
+   WATCH PAGE / VIDEO PLAYER
 ========================= */
 
 .hidden {
@@ -603,7 +598,6 @@ button {
   text-align: center;
 }
 
-/* Main video player */
 .player {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -611,13 +605,29 @@ button {
   display: block;
   background: #000;
   border-radius: 14px;
+  overflow: hidden;
+  border: 0;
+  position: relative;
+}
+
+/* DivineTube uploaded video */
+.playerInner {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #000;
   border: 0;
   object-fit: contain;
 }
 
-/* Make the player poster fill the player */
-.player::poster {
-  object-fit: cover;
+/* YouTube iframe */
+.player iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  display: block;
+  border: 0;
+  border-radius: 14px;
 }
 
 .watchLayout {
@@ -890,6 +900,15 @@ body.light .toast {
   }
 
   .card .thumb {
+    border-radius: 10px;
+  }
+
+  .player {
+    border-radius: 10px;
+  }
+
+  .player iframe {
+    min-height: 220px;
     border-radius: 10px;
   }
 }
