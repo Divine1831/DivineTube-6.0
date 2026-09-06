@@ -12,6 +12,64 @@
   <main class="page">
     <div class="watchLayout">
       <section>
+        <div id="player" class="player"></div>
+
+        <h1 id="title">Loading…</h1>
+
+        <div class="watchMeta">
+          <span id="views" class="muted"></span>
+          <span id="category" class="pill"></span>
+        </div>
+
+        <div class="actions">
+          <button id="like" class="btn">👍 Like</button>
+          <button id="save" class="btn">💾 Save</button>
+          <button id="share" class="btn">↗ Share</button>
+          <button id="subscribe" class="btn primary">Subscribe</button>
+        </div>
+
+        <div class="panel description">
+          <p id="desc"></p>
+        </div>
+
+        <div class="panel">
+          <h2>Comments</h2>
+          <div class="commentBox">
+            <input id="commentInput" placeholder="Add a comment">
+            <button id="commentBtn" class="btn primary">Comment</button>
+          </div>
+          <div id="comments"></div>
+        </div>
+      </section>
+
+      <aside>
+        <h2>Up next</h2>
+        <div id="related" class="sideVideos"></div>
+      </aside>
+    </div>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html><!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Watch | DivineTube</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app"></div>
+
+  <main class="page">
+    <div class="watchLayout">
+      <section>
         <video id="player" class="player" controls playsinline></video>
         <h1 id="title">Loading…</h1>
         
