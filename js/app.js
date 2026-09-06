@@ -409,15 +409,13 @@ async function loadYouTubePopular(
 
     return data.items || [];
 
-  } catch (error) {
+  }catch (error) {
+  console.error("YouTube popular error:", error);
 
-    console.error(
-      'YouTube popular error:',
-      error
-    );
+  toast("YouTube error: " + error.message);
 
-    return [];
-  }
+  return [];
+}
 }
 
 /* =========================================
