@@ -1,3 +1,7 @@
+/* =========================================
+   SUPABASE
+========================================= */
+
 function getSb() {
   if (
     !window.supabaseClient &&
@@ -20,6 +24,10 @@ function getSb() {
   return window.supabaseClient;
 }
 
+/* =========================================
+   HELPERS
+========================================= */
+
 const $ = s => document.querySelector(s);
 
 const esc = s =>
@@ -41,8 +49,17 @@ const date = n =>
     day: 'numeric'
   });
 
+function formatYouTubeCount(n) {
+  return Number(n || 0).toLocaleString();
+}
+
+/* =========================================
+   CURRENT USER
+========================================= */
+
 async function currentUser() {
   const s = getSb();
+
   if (!s) return null;
 
   try {
@@ -60,6 +77,10 @@ function initials(u) {
   ).slice(0, 1).toUpperCase();
 }
 
+/* =========================================
+   THEME
+========================================= */
+
 function toggleTheme() {
   document.body.classList.toggle('light');
 
@@ -68,6 +89,10 @@ function toggleTheme() {
       ? 'light'
       : 'dark';
 }
+
+/* =========================================
+   TOAST
+========================================= */
 
 function toast(m) {
   const t = $('#toast');
@@ -82,11 +107,19 @@ function toast(m) {
   }
 }
 
+/* =========================================
+   AVATAR
+========================================= */
+
 function avatar(n = 'D') {
   return `<div class="mini">${esc(
     n[0]?.toUpperCase() || 'D'
   )}</div>`;
 }
+
+/* =========================================
+   LOADING
+========================================= */
 
 function loading(e) {
   e.innerHTML = `
@@ -100,16 +133,21 @@ function loading(e) {
 }
 
 /* =========================================
-   VIDEO CARD
+   LOCAL DIVINETUBE CARD
 ========================================= */
 
 function card(v) {
-  const n = v.profiles?.username || 'Creator';
+  const n =
+    v.profiles?.username ||
+    'Creator';
 
   return `
     <article class="card">
+
       <a href="watch.html?id=${encodeURIComponent(v.id)}">
+
         <div class="thumb">
+
           ${
             v.thumbnail_url
               ? `
@@ -135,12 +173,15 @@ function card(v) {
               `
               : ''
           }
+
         </div>
 
         <div class="meta">
+
           ${avatar(n)}
 
           <div>
+
             <div class="title">
               ${esc(v.title)}
             </div>
@@ -150,64 +191,374 @@ function card(v) {
             </div>
 
             <div class="muted">
-              ${fmt(v.views)} views • ${date(v.created_at)}
+              ${fmt(v.views)} views •
+              ${date(v.created_at)}
             </div>
+
           </div>
+
         </div>
+
       </a>
+
     </article>
   `;
 }
 
 /* =========================================
-   HEADER & AUTH STATE
+   YOUTUBE CARD
 ========================================= */
 
-async function header() {
-  const s = getSb();
-  const u = await currentUser();
+function youtubeCard(v) {
+  const id =
+    v.id?.videoId ||
+    v.id;
 
-  const avatarEl = $('#avatar');
-  const authLinkEl = $('#authLink');
+  const snippet =
+    v.snippet || {};
 
-  if (u) {
-    // User is signed in
-    if (avatarEl) {
-      avatarEl.textContent = initials(u);
-      avatarEl.style.display = 'flex';
-    }
+  const statistics =
+    v.statistics || {};
 
-    if (authLinkEl) {
-      authLinkEl.textContent = 'Sign out';
-      authLinkEl.href = '#';
-      authLinkEl.onclick = async (e) => {
-        e.preventDefault();
-        if (s) {
-          await s.auth.signOut();
-          location.href = 'index.html';
-        }
-      };
-    }
-  } else {
-    // User is NOT signed in
-    if (avatarEl) {
-      avatarEl.style.display = 'none';
-    }
+  if (!id) return '';
 
-    if (authLinkEl) {
-      authLinkEl.textContent = 'Sign in';
-      authLinkEl.href = 'auth.html';
-      authLinkEl.onclick = null;
-    }
+  const title =
+    snippet.title ||
+    'YouTube video';
+
+  const channel =
+    snippet.channelTitle ||
+    'YouTube';
+
+  const thumb =
+    snippet.thumbnails?.high?.url ||
+    snippet.thumbnails?.medium?.url ||
+    snippet.thumbnails?.default?.url ||
+    '';
+
+  const views =
+    statistics.viewCount
+      ? `${formatYouTubeCount(statistics.viewCount)} views`
+      : 'YouTube';
+
+  const published =
+    snippet.publishedAt
+      ? date(snippet.publishedAt)
+      : '';
+
+  return `
+    <article class="card youtube-card">
+
+      <a href="watch.html?youtube=${encodeURIComponent(id)}">
+
+        <div class="thumb">
+
+          ${
+            thumb
+              ? `
+                <img
+                  loading="lazy"
+                  src="${esc(thumb)}"
+                  alt="${esc(title)}"
+                >
+              `
+              : `
+                <div class="thumbFallback">
+                  ▶
+                </div>
+              `
+          }
+
+          <span class="duration youtubeBadge">
+            YouTube
+          </span>
+
+        </div>
+
+        <div class="meta">
+
+          <div
+            class="mini"
+            aria-hidden="true"
+          >
+            Y
+          </div>
+
+          <div>
+
+            <div class="title">
+              ${esc(title)}
+            </div>
+
+            <div class="muted">
+              ${esc(channel)}
+            </div>
+
+            <div class="muted">
+              ${views}
+              ${published ? ` • ${published}` : ''}
+            </div>
+
+          </div>
+
+        </div>
+
+      </a>
+
+    </article>
+  `;
+}
+
+/* =========================================
+   YOUTUBE API
+========================================= */
+
+function getYouTubeKey() {
+  return (
+    window.DIVINETUBE_CONFIG
+      ?.YOUTUBE_API_KEY || ''
+  );
+}
+
+async function youtubeRequest(endpoint, params = {}) {
+
+  const key =
+    getYouTubeKey();
+
+  if (!key) {
+    throw new Error(
+      'YouTube API key is missing.'
+    );
   }
 
-  if (localStorage.dt_theme === 'light') {
-    document.body.classList.add('light');
+  const url =
+    new URL(
+      `https://www.googleapis.com/youtube/v3/${endpoint}`
+    );
+
+  Object.entries({
+    ...params,
+    key
+  }).forEach(([k, v]) => {
+
+    if (
+      v !== undefined &&
+      v !== null &&
+      v !== ''
+    ) {
+      url.searchParams.set(
+        k,
+        v
+      );
+    }
+  });
+
+  const response =
+    await fetch(url.toString());
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+
+    throw new Error(
+      data?.error?.message ||
+      'YouTube request failed.'
+    );
+  }
+
+  return data;
+}
+
+/* =========================================
+   YOUTUBE MOST POPULAR
+========================================= */
+
+async function loadYouTubePopular(
+  limit = 12,
+  category = ''
+) {
+
+  try {
+
+    if (category) {
+
+      return await loadYouTubeSearch(
+        category,
+        limit
+      );
+    }
+
+    const data =
+      await youtubeRequest(
+        'videos',
+        {
+          part:
+            'snippet,statistics,contentDetails',
+
+          chart:
+            'mostPopular',
+
+          regionCode:
+            'NG',
+
+          maxResults:
+            Math.min(limit, 50)
+        }
+      );
+
+    return data.items || [];
+
+  } catch (error) {
+
+    console.error(
+      'YouTube popular error:',
+      error
+    );
+
+    return [];
   }
 }
 
 /* =========================================
-   LOAD VIDEOS
+   YOUTUBE SEARCH
+========================================= */
+
+async function loadYouTubeSearch(
+  query,
+  limit = 12
+) {
+
+  if (!query)
+    return [];
+
+  try {
+
+    const data =
+      await youtubeRequest(
+        'search',
+        {
+          part:
+            'snippet',
+
+          q:
+            query,
+
+          type:
+            'video',
+
+          videoEmbeddable:
+            'true',
+
+          regionCode:
+            'NG',
+
+          relevanceLanguage:
+            'en',
+
+          maxResults:
+            Math.min(limit, 50)
+        }
+      );
+
+    return data.items || [];
+
+  } catch (error) {
+
+    console.error(
+      'YouTube search error:',
+      error
+    );
+
+    return [];
+  }
+}
+
+/* =========================================
+   HEADER
+========================================= */
+
+async function header() {
+
+  const s =
+    getSb();
+
+  const u =
+    await currentUser();
+
+  const avatarEl =
+    $('#avatar');
+
+  const authLinkEl =
+    $('#authLink');
+
+  if (u) {
+
+    if (avatarEl) {
+
+      avatarEl.textContent =
+        initials(u);
+
+      avatarEl.style.display =
+        'flex';
+    }
+
+    if (authLinkEl) {
+
+      authLinkEl.textContent =
+        'Sign out';
+
+      authLinkEl.href =
+        '#';
+
+      authLinkEl.onclick =
+        async e => {
+
+          e.preventDefault();
+
+          if (s) {
+
+            await s.auth.signOut();
+
+            location.href =
+              'index.html';
+          }
+        };
+    }
+
+  } else {
+
+    if (avatarEl) {
+      avatarEl.style.display =
+        'none';
+    }
+
+    if (authLinkEl) {
+
+      authLinkEl.textContent =
+        'Sign in';
+
+      authLinkEl.href =
+        'auth.html';
+
+      authLinkEl.onclick =
+        null;
+    }
+  }
+
+  if (
+    localStorage.dt_theme ===
+    'light'
+  ) {
+
+    document.body.classList.add(
+      'light'
+    );
+  }
+}
+
+/* =========================================
+   LOAD LOCAL + YOUTUBE
 ========================================= */
 
 async function loadVideos(
@@ -216,40 +567,108 @@ async function loadVideos(
   limit = 40,
   category = ''
 ) {
-  const s = getSb();
-  const e = $(target);
 
-  if (!e || !s) return;
+  const s =
+    getSb();
+
+  const e =
+    $(target);
+
+  if (!e)
+    return;
 
   loading(e);
 
-  let q = s
-    .from('videos')
-    .select('*,profiles(username)')
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  let localVideos = [];
+
+  /* LOCAL DIVINETUBE VIDEOS */
+
+  if (s) {
+
+    let q =
+      s
+        .from('videos')
+        .select(
+          '*,profiles(username)'
+        )
+        .order(
+          'created_at',
+          {
+            ascending: false
+          }
+        )
+        .limit(limit);
+
+    if (query) {
+
+      q =
+        q.ilike(
+          'title',
+          `%${query}%`
+        );
+    }
+
+    if (category) {
+
+      q =
+        q.eq(
+          'category',
+          category
+        );
+    }
+
+    const {
+      data,
+      error
+    } =
+      await q;
+
+    if (!error) {
+      localVideos =
+        data || [];
+    }
+  }
+
+  /* YOUTUBE */
+
+  let youtubeVideos = [];
 
   if (query) {
-    q = q.ilike('title', `%${query}%`);
+
+    youtubeVideos =
+      await loadYouTubeSearch(
+        query,
+        Math.min(
+          12,
+          limit
+        )
+      );
+
+  } else {
+
+    youtubeVideos =
+      await loadYouTubePopular(
+        Math.min(
+          12,
+          limit
+        ),
+        category
+      );
   }
 
-  if (category) {
-    q = q.eq('category', category);
-  }
+  const localHtml =
+    localVideos
+      .map(card)
+      .join('');
 
-  const { data, error } = await q;
-
-  if (error) {
-    e.innerHTML = `
-      <div class="notice">
-        Supabase error: ${esc(error.message)}
-      </div>
-    `;
-    return;
-  }
+  const youtubeHtml =
+    youtubeVideos
+      .map(youtubeCard)
+      .join('');
 
   e.innerHTML =
-    (data || []).map(card).join('') ||
+    localHtml +
+    youtubeHtml ||
     `
       <div class="notice">
         No videos found.
@@ -262,112 +681,401 @@ async function loadVideos(
 ========================================= */
 
 async function authPage() {
-  const s = getSb();
-  const f = $('#authForm');
 
-  if (!f || !s) return;
+  const s =
+    getSb();
 
-  f.onsubmit = async e => {
-    e.preventDefault();
+  const f =
+    $('#authForm');
 
-    const signup = $('#signup').checked;
-    const email = $('#email').value.trim();
-    const password = $('#password').value;
-    const user = $('#username')?.value.trim();
+  if (!f || !s)
+    return;
 
-    $('#msg').textContent = 'Please wait…';
+  f.onsubmit =
+    async e => {
 
-    const r = signup
-      ? await s.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              username: user || email.split('@')[0]
-            }
-          }
-        })
-      : await s.auth.signInWithPassword({
-          email,
-          password
-        });
+      e.preventDefault();
 
-    if (r.error) {
-      $('#msg').textContent = r.error.message;
-    } else if (signup && !r.data.session) {
-      $('#msg').textContent =
-        'Account created. Check your email if confirmation is enabled.';
-    } else {
-      location.href = 'index.html';
-    }
-  };
-}
+      const signup =
+        window.isSignup === true;
 
-/* =========================================
-   CREATE THUMBNAIL FROM VIDEO
-========================================= */
+      const email =
+        $('#email')
+          ?.value
+          .trim();
 
-function extractVideoFrame(file) {
-  return new Promise(resolve => {
-    const video = document.createElement('video');
-    const url = URL.createObjectURL(file);
+      const password =
+        $('#password')
+          ?.value || '';
 
-    video.preload = 'metadata';
-    video.muted = true;
-    video.playsInline = true;
-    video.src = url;
+      const user =
+        $('#username')
+          ?.value
+          .trim() || '';
 
-    let finished = false;
+      const msg =
+        $('#msg');
 
-    function finish(result) {
-      if (finished) return;
-      finished = true;
-      URL.revokeObjectURL(url);
-      video.removeAttribute('src');
-      video.load();
-      resolve(result);
-    }
+      const submit =
+        $('#authSubmit');
 
-    video.onloadedmetadata = () => {
-      if (!video.duration || !video.videoWidth || !video.videoHeight) {
-        finish(null);
+      if (
+        !email ||
+        !password
+      ) {
+
+        if (msg) {
+
+          msg.textContent =
+            'Please enter your email and password.';
+        }
+
         return;
       }
 
-      const wantedTime = video.duration * 0.15;
-      const safeTime = Math.min(
-        Math.max(wantedTime, 0.1),
-        Math.max(video.duration - 0.1, 0.1)
-      );
+      if (
+        signup &&
+        !user
+      ) {
 
-      video.currentTime = safeTime;
-    };
+        if (msg) {
 
-    video.onseeked = () => {
+          msg.textContent =
+            'Please choose a username.';
+        }
+
+        return;
+      }
+
+      if (msg) {
+
+        msg.textContent =
+          signup
+            ? 'Creating your account…'
+            : 'Logging you in…';
+      }
+
+      if (submit) {
+
+        submit.disabled =
+          true;
+
+        submit.textContent =
+          signup
+            ? 'Creating account…'
+            : 'Logging in…';
+      }
+
       try {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          finish(null);
+        let r;
+
+        if (signup) {
+
+          r =
+            await s.auth
+              .signUp({
+                email,
+                password,
+                options: {
+                  data: {
+                    username:
+                      user
+                  }
+                }
+              });
+
+        } else {
+
+          r =
+            await s.auth
+              .signInWithPassword({
+                email,
+                password
+              });
+        }
+
+        if (r.error) {
+
+          if (msg) {
+
+            msg.textContent =
+              r.error.message;
+          }
+
           return;
         }
 
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(blob => finish(blob), 'image/jpeg', 0.88);
+        if (
+          signup &&
+          !r.data.session
+        ) {
+
+          if (msg) {
+
+            msg.textContent =
+              'Account created! Check your email to verify your account.';
+          }
+
+          return;
+        }
+
+        if (msg) {
+
+          msg.textContent =
+            'Login successful!';
+        }
+
+        setTimeout(
+          () => {
+
+            location.href =
+              'index.html';
+
+          },
+          500
+        );
+
       } catch (error) {
-        console.error('Thumbnail generation error:', error);
-        finish(null);
+
+        console.error(error);
+
+        if (msg) {
+
+          msg.textContent =
+            'Something went wrong. Please try again.';
+        }
+
+      } finally {
+
+        if (submit) {
+
+          submit.disabled =
+            false;
+
+          submit.textContent =
+            signup
+              ? 'Create account'
+              : 'Log in';
+        }
       }
     };
 
-    video.onerror = () => {
-      console.error('Could not read uploaded video.');
-      finish(null);
-    };
-  });
+  $('#forgotPassword')
+    ?.addEventListener(
+      'click',
+      async () => {
+
+        const email =
+          $('#email')
+            ?.value
+            .trim();
+
+        const msg =
+          $('#msg');
+
+        if (!email) {
+
+          if (msg) {
+
+            msg.textContent =
+              'Enter your email first.';
+          }
+
+          return;
+        }
+
+        if (msg) {
+
+          msg.textContent =
+            'Sending password reset email…';
+        }
+
+        const {
+          error
+        } =
+          await s.auth
+            .resetPasswordForEmail(
+              email,
+              {
+                redirectTo:
+                  `${location.origin}/update-password.html`
+              }
+            );
+
+        if (error) {
+
+          if (msg) {
+
+            msg.textContent =
+              error.message;
+          }
+
+          return;
+        }
+
+        if (msg) {
+
+          msg.textContent =
+            'Check your email for the password reset link.';
+        }
+      }
+    );
+}
+
+/* =========================================
+   CREATE THUMBNAIL
+========================================= */
+
+function extractVideoFrame(file) {
+
+  return new Promise(
+    resolve => {
+
+      const video =
+        document.createElement(
+          'video'
+        );
+
+      const url =
+        URL.createObjectURL(file);
+
+      video.preload =
+        'metadata';
+
+      video.muted =
+        true;
+
+      video.playsInline =
+        true;
+
+      video.src =
+        url;
+
+      let finished =
+        false;
+
+      function finish(result) {
+
+        if (finished)
+          return;
+
+        finished =
+          true;
+
+        URL.revokeObjectURL(
+          url
+        );
+
+        video.removeAttribute(
+          'src'
+        );
+
+        video.load();
+
+        resolve(result);
+      }
+
+      video.onloadedmetadata =
+        () => {
+
+          if (
+            !video.duration ||
+            !video.videoWidth ||
+            !video.videoHeight
+          ) {
+
+            finish(null);
+
+            return;
+          }
+
+          const wantedTime =
+            video.duration *
+            0.15;
+
+          const safeTime =
+            Math.min(
+              Math.max(
+                wantedTime,
+                0.1
+              ),
+              Math.max(
+                video.duration - 0.1,
+                0.1
+              )
+            );
+
+          video.currentTime =
+            safeTime;
+        };
+
+      video.onseeked =
+        () => {
+
+          try {
+
+            const canvas =
+              document.createElement(
+                'canvas'
+              );
+
+            canvas.width =
+              video.videoWidth;
+
+            canvas.height =
+              video.videoHeight;
+
+            const ctx =
+              canvas.getContext(
+                '2d'
+              );
+
+            if (!ctx) {
+
+              finish(null);
+
+              return;
+            }
+
+            ctx.drawImage(
+              video,
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            );
+
+            canvas.toBlob(
+              blob =>
+                finish(blob),
+              'image/jpeg',
+              0.88
+            );
+
+          } catch (error) {
+
+            console.error(
+              'Thumbnail generation error:',
+              error
+            );
+
+            finish(null);
+          }
+        };
+
+      video.onerror =
+        () => {
+
+          console.error(
+            'Could not read uploaded video.'
+          );
+
+          finish(null);
+        };
+
+    }
+  );
 }
 
 /* =========================================
@@ -375,27 +1083,64 @@ function extractVideoFrame(file) {
 ========================================= */
 
 function getVideoDuration(file) {
-  return new Promise(resolve => {
-    const video = document.createElement('video');
-    const url = URL.createObjectURL(file);
 
-    video.preload = 'metadata';
-    video.src = url;
+  return new Promise(
+    resolve => {
 
-    video.onloadedmetadata = () => {
-      const total = Math.max(0, Math.floor(video.duration));
-      const min = Math.floor(total / 60);
-      const sec = total % 60;
+      const video =
+        document.createElement(
+          'video'
+        );
 
-      URL.revokeObjectURL(url);
-      resolve(`${min}:${sec < 10 ? '0' : ''}${sec}`);
-    };
+      const url =
+        URL.createObjectURL(file);
 
-    video.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve('');
-    };
-  });
+      video.preload =
+        'metadata';
+
+      video.src =
+        url;
+
+      video.onloadedmetadata =
+        () => {
+
+          const total =
+            Math.max(
+              0,
+              Math.floor(
+                video.duration
+              )
+            );
+
+          const min =
+            Math.floor(
+              total / 60
+            );
+
+          const sec =
+            total % 60;
+
+          URL.revokeObjectURL(
+            url
+          );
+
+          resolve(
+            `${min}:${sec < 10 ? '0' : ''}${sec}`
+          );
+        };
+
+      video.onerror =
+        () => {
+
+          URL.revokeObjectURL(
+            url
+          );
+
+          resolve('');
+        };
+
+    }
+  );
 }
 
 /* =========================================
@@ -403,263 +1148,847 @@ function getVideoDuration(file) {
 ========================================= */
 
 async function uploadPage() {
-  const s = getSb();
-  const f = $('#uploadForm');
 
-  if (!f || !s) return;
+  const s =
+    getSb();
 
-  const u = await currentUser();
+  const f =
+    $('#uploadForm');
+
+  if (!f || !s)
+    return;
+
+  const u =
+    await currentUser();
 
   if (!u) {
+
     if ($('#uploadGate')) {
-      $('#uploadGate').innerHTML = `
-        <div class="notice">
-          Please sign in before uploading.
-        </div>
-      `;
+
+      $('#uploadGate')
+        .innerHTML = `
+          <div class="notice">
+            Please sign in before uploading.
+          </div>
+        `;
     }
-    f.style.display = 'none';
+
+    f.style.display =
+      'none';
+
     return;
   }
 
-  const vi = $('#video');
-  const ti = $('#thumb');
+  const vi =
+    $('#video');
 
-  ti?.addEventListener('change', () => {
-    const x = ti.files[0];
+  const ti =
+    $('#thumb');
 
-    if (x && $('#preview')) {
-      $('#preview').src = URL.createObjectURL(x);
-      $('#preview').classList.remove('hidden');
-    }
-  });
+  ti?.addEventListener(
+    'change',
+    () => {
 
-  f.onsubmit = async e => {
-    e.preventDefault();
+      const x =
+        ti.files?.[0];
 
-    const video = vi?.files?.[0];
-    const customThumb = ti?.files?.[0] || null;
-    const title = $('#title').value.trim();
-    const desc = $('#desc').value.trim();
-    const category = $('#category').value;
+      if (
+        x &&
+        $('#preview')
+      ) {
 
-    if (!video || !title) {
-      $('#msg').textContent = 'Title and video are required.';
-      return;
-    }
+        $('#preview').src =
+          URL.createObjectURL(
+            x
+          );
 
-    let thumbBlob = customThumb;
-
-    if (!thumbBlob) {
-      $('#msg').textContent = 'Creating thumbnail from your video…';
-      thumbBlob = await extractVideoFrame(video);
-    }
-
-    $('#msg').textContent = 'Reading video information…';
-    const durationStr = await getVideoDuration(video);
-
-    $('#msg').textContent = 'Uploading video…';
-    const safe = name => name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const vp = `${u.id}/${crypto.randomUUID()}-${safe(video.name)}`;
-
-    let r = await s.storage.from('videos').upload(vp, video, {
-      upsert: false,
-      contentType: video.type || 'video/mp4'
-    });
-
-    if (r.error) {
-      $('#msg').textContent = r.error.message;
-      return;
-    }
-
-    const videoUrl = s.storage.from('videos').getPublicUrl(vp).data.publicUrl;
-    let thumbUrl = null;
-
-    if (thumbBlob) {
-      $('#msg').textContent = 'Uploading video thumbnail…';
-      const tp = `${u.id}/${crypto.randomUUID()}-thumb.jpg`;
-
-      r = await s.storage.from('thumbnails').upload(tp, thumbBlob, {
-        upsert: false,
-        contentType: 'image/jpeg'
-      });
-
-      if (!r.error) {
-        thumbUrl = s.storage.from('thumbnails').getPublicUrl(tp).data.publicUrl;
+        $('#preview')
+          .classList
+          .remove(
+            'hidden'
+          );
       }
     }
+  );
 
-    r = await s
-      .from('videos')
-      .insert({
-        owner_id: u.id,
-        title,
-        description: desc,
-        category,
-        video_url: videoUrl,
-        thumbnail_url: thumbUrl,
-        duration: durationStr
-      })
-      .select()
-      .single();
+  f.onsubmit =
+    async e => {
 
-    if (r.error) {
-      $('#msg').textContent = r.error.message;
-      return;
-    }
+      e.preventDefault();
 
-    $('#msg').textContent = 'Published!';
+      const video =
+        vi?.files?.[0];
 
-    setTimeout(() => {
-      location.href = 'watch.html?id=' + r.data.id;
-    }, 700);
-  };
+      const customThumb =
+        ti?.files?.[0] ||
+        null;
+
+      const title =
+        $('#title')
+          .value
+          .trim();
+
+      const desc =
+        $('#desc')
+          .value
+          .trim();
+
+      const category =
+        $('#category')
+          .value;
+
+      if (
+        !video ||
+        !title
+      ) {
+
+        $('#msg').textContent =
+          'Title and video are required.';
+
+        return;
+      }
+
+      let thumbBlob =
+        customThumb;
+
+      if (!thumbBlob) {
+
+        $('#msg').textContent =
+          'Creating thumbnail from your video…';
+
+        thumbBlob =
+          await extractVideoFrame(
+            video
+          );
+      }
+
+      $('#msg').textContent =
+        'Reading video information…';
+
+      const durationStr =
+        await getVideoDuration(
+          video
+        );
+
+      $('#msg').textContent =
+        'Uploading video…';
+
+      const safe =
+        name =>
+          name.replace(
+            /[^a-zA-Z0-9._-]/g,
+            '_'
+          );
+
+      const vp =
+        `${u.id}/${crypto.randomUUID()}-${safe(video.name)}`;
+
+      let r =
+        await s.storage
+          .from('videos')
+          .upload(
+            vp,
+            video,
+            {
+              upsert: false,
+              contentType:
+                video.type ||
+                'video/mp4'
+            }
+          );
+
+      if (r.error) {
+
+        $('#msg').textContent =
+          r.error.message;
+
+        return;
+      }
+
+      const videoUrl =
+        s.storage
+          .from('videos')
+          .getPublicUrl(
+            vp
+          )
+          .data
+          .publicUrl;
+
+      let thumbUrl =
+        null;
+
+      if (thumbBlob) {
+
+        $('#msg').textContent =
+          'Uploading video thumbnail…';
+
+        const tp =
+          `${u.id}/${crypto.randomUUID()}-thumb.jpg`;
+
+        r =
+          await s.storage
+            .from('thumbnails')
+            .upload(
+              tp,
+              thumbBlob,
+              {
+                upsert: false,
+                contentType:
+                  'image/jpeg'
+              }
+            );
+
+        if (!r.error) {
+
+          thumbUrl =
+            s.storage
+              .from('thumbnails')
+              .getPublicUrl(
+                tp
+              )
+              .data
+              .publicUrl;
+        }
+      }
+
+      r =
+        await s
+          .from('videos')
+          .insert({
+            owner_id:
+              u.id,
+
+            title,
+
+            description:
+              desc,
+
+            category,
+
+            video_url:
+              videoUrl,
+
+            thumbnail_url:
+              thumbUrl,
+
+            duration:
+              durationStr
+          })
+          .select()
+          .single();
+
+      if (r.error) {
+
+        $('#msg').textContent =
+          r.error.message;
+
+        return;
+      }
+
+      $('#msg').textContent =
+        'Published!';
+
+      toast(
+        'Video published!'
+      );
+
+      setTimeout(
+        () => {
+
+          location.href =
+            'watch.html?id=' +
+            r.data.id;
+
+        },
+        700
+      );
+    };
 }
 
 /* =========================================
-   WATCH PAGE
+   YOUTUBE WATCH
 ========================================= */
 
-async function watchPage() {
-  const s = getSb();
-  const id = new URLSearchParams(location.search).get('id');
+async function youtubeWatchPage(
+  youtubeId
+) {
 
-  if (!id || !s) return;
+  const player =
+    $('#player');
 
-  const { data: v, error } = await s
-    .from('videos')
-    .select('*,profiles(username,avatar_url)')
-    .eq('id', id)
-    .single();
+  if (!player)
+    return;
 
-  if (error || !v) return;
+  player.innerHTML = '';
 
-  if ($('#title')) $('#title').textContent = v.title;
-  if ($('#desc')) $('#desc').textContent = v.description || 'No description.';
-  if ($('#views')) $('#views').textContent = `${fmt(v.views)} views • ${date(v.created_at)}`;
+  try {
 
-  if ($('#player')) {
-    const player = $('#player');
-    player.controls = true;
-    player.playsInline = true;
-    player.preload = 'metadata';
+    const data =
+      await youtubeRequest(
+        'videos',
+        {
+          part:
+            'snippet,statistics,contentDetails',
 
-    if (v.thumbnail_url) player.poster = v.thumbnail_url;
-    player.src = v.video_url;
-
-    const savedTime = localStorage.getItem(`dt_pos_${v.id}`);
-
-    if (savedTime) {
-      player.addEventListener(
-        'loadedmetadata',
-        () => {
-          const time = Number(savedTime);
-          if (Number.isFinite(time) && time > 0 && time < player.duration) {
-            player.currentTime = time;
-          }
-        },
-        { once: true }
+          id:
+            youtubeId
+        }
       );
-    }
 
-    player.ontimeupdate = () => {
-      if (player.currentTime > 2) {
-        localStorage.setItem(`dt_pos_${v.id}`, player.currentTime);
-      }
-    };
-  }
+    const v =
+      data.items?.[0];
 
-  if ($('#channel')) $('#channel').textContent = v.profiles?.username || 'Creator';
-  if ($('#category')) $('#category').textContent = v.category || 'General';
+    if (!v) {
 
-  loadVideos('#related', '', 8);
+      player.innerHTML = `
+        <div class="notice">
+          YouTube video not found.
+        </div>
+      `;
 
-  Promise.all([
-    s.rpc('increment_view', { video_uuid: v.id }),
-    recordHistory(v.id),
-    updateLike(id),
-    updateSave(id)
-  ]);
-
-  loadComments(id);
-
-  /* LIKE */
-  $('#like')?.addEventListener('click', async () => {
-    const u = await currentUser();
-    if (!u) return (location.href = 'auth.html');
-
-    const { data } = await s
-      .from('likes')
-      .select('video_id')
-      .eq('video_id', id)
-      .eq('user_id', u.id)
-      .maybeSingle();
-
-    if (data) {
-      await s.from('likes').delete().eq('video_id', id).eq('user_id', u.id);
-    } else {
-      await s.from('likes').insert({ video_id: id, user_id: u.id });
-    }
-
-    updateLike(id);
-  });
-
-  /* SAVE */
-  $('#save')?.addEventListener('click', async () => {
-    const u = await currentUser();
-    if (!u) return (location.href = 'auth.html');
-
-    const { data } = await s
-      .from('saved_videos')
-      .select('video_id')
-      .eq('video_id', id)
-      .eq('user_id', u.id)
-      .maybeSingle();
-
-    if (data) {
-      await s.from('saved_videos').delete().eq('video_id', id).eq('user_id', u.id);
-    } else {
-      await s.from('saved_videos').insert({ video_id: id, user_id: u.id });
-    }
-
-    updateSave(id);
-  });
-
-  /* SHARE */
-  $('#share')?.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      toast('Link copied');
-    } catch {
-      toast('Copy the page URL');
-    }
-  });
-
-  /* SUBSCRIBE */
-  $('#subscribe')?.addEventListener('click', () => subscribe(v.owner_id));
-
-  /* COMMENT */
-  $('#commentBtn')?.addEventListener('click', async () => {
-    const u = await currentUser();
-    if (!u) return (location.href = 'auth.html');
-
-    const content = $('#commentInput').value.trim();
-    if (!content) return;
-
-    const r = await s.from('comments').insert({
-      video_id: id,
-      user_id: u.id,
-      content
-    });
-
-    if (r.error) {
-      toast(r.error.message);
       return;
     }
 
-    $('#commentInput').value = '';
-    loadComments(id);
-  });
+    const snippet =
+      v.snippet || {};
+
+    const stats =
+      v.statistics || {};
+
+    if ($('#title')) {
+
+      $('#title').textContent =
+        snippet.title ||
+        'YouTube video';
+    }
+
+    if ($('#desc')) {
+
+      $('#desc').textContent =
+        snippet.description ||
+        '';
+    }
+
+    if ($('#views')) {
+
+      $('#views').textContent =
+        `${formatYouTubeCount(stats.viewCount)} views • ${date(snippet.publishedAt)}`;
+    }
+
+    if ($('#category')) {
+
+      $('#category').textContent =
+        'YouTube';
+    }
+
+    player.innerHTML = `
+      <iframe
+        src="https://www.youtube.com/embed/${encodeURIComponent(youtubeId)}?enablejsapi=1"
+        title="${esc(snippet.title || 'YouTube video')}"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+        style="
+          width:100%;
+          height:100%;
+          min-height:300px;
+          border:0;
+          border-radius:14px;
+        "
+      ></iframe>
+    `;
+
+    loadYouTubeRelated(
+      snippet.title ||
+      ''
+    );
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+    player.innerHTML = `
+      <div class="notice">
+        ${esc(error.message)}
+      </div>
+    `;
+  }
+}
+
+/* =========================================
+   YOUTUBE RELATED
+========================================= */
+
+async function loadYouTubeRelated(
+  query
+) {
+
+  const e =
+    $('#related');
+
+  if (!e || !query)
+    return;
+
+  const results =
+    await loadYouTubeSearch(
+      query,
+      8
+    );
+
+  e.innerHTML =
+    results
+      .map(youtubeCard)
+      .join('') ||
+    `
+      <div class="notice">
+        No related videos.
+      </div>
+    `;
+}
+
+/* =========================================
+   LOCAL WATCH PAGE
+========================================= */
+
+async function localWatchPage(id) {
+
+  const s =
+    getSb();
+
+  if (!id || !s)
+    return;
+
+  const {
+    data: v,
+    error
+  } =
+    await s
+      .from('videos')
+      .select(
+        '*,profiles(username,avatar_url)'
+      )
+      .eq(
+        'id',
+        id
+      )
+      .single();
+
+  if (error || !v)
+    return;
+
+  if ($('#title')) {
+
+    $('#title').textContent =
+      v.title;
+  }
+
+  if ($('#desc')) {
+
+    $('#desc').textContent =
+      v.description ||
+      'No description.';
+  }
+
+  if ($('#views')) {
+
+    $('#views').textContent =
+      `${fmt(v.views)} views • ${date(v.created_at)}`;
+  }
+
+  if ($('#category')) {
+
+    $('#category').textContent =
+      v.category ||
+      'General';
+  }
+
+  if ($('#channel')) {
+
+    $('#channel').textContent =
+      v.profiles?.username ||
+      'Creator';
+  }
+
+  /*
+   * The updated watch.html uses
+   * <div id="player"> instead of
+   * <video id="player">.
+   */
+
+  if ($('#player')) {
+
+    const player =
+      $('#player');
+
+    player.innerHTML = `
+      <video
+        class="playerInner"
+        controls
+        playsinline
+        preload="metadata"
+        ${v.thumbnail_url
+          ? `poster="${esc(v.thumbnail_url)}"`
+          : ''}
+        src="${esc(v.video_url)}"
+      ></video>
+    `;
+
+    const video =
+      player.querySelector(
+        'video'
+      );
+
+    const savedTime =
+      localStorage.getItem(
+        `dt_pos_${v.id}`
+      );
+
+    if (
+      savedTime &&
+      video
+    ) {
+
+      video.addEventListener(
+        'loadedmetadata',
+        () => {
+
+          const time =
+            Number(savedTime);
+
+          if (
+            Number.isFinite(
+              time
+            ) &&
+            time > 0 &&
+            time <
+              video.duration
+          ) {
+
+            video.currentTime =
+              time;
+          }
+
+        },
+        {
+          once: true
+        }
+      );
+    }
+
+    video?.addEventListener(
+      'timeupdate',
+      () => {
+
+        if (
+          video.currentTime >
+          2
+        ) {
+
+          localStorage.setItem(
+            `dt_pos_${v.id}`,
+            video.currentTime
+          );
+        }
+      }
+    );
+  }
+
+  loadVideos(
+    '#related',
+    '',
+    8
+  );
+
+  await s.rpc(
+    'increment_view',
+    {
+      video_uuid:
+        v.id
+    }
+  );
+
+  await recordHistory(
+    v.id
+  );
+
+  await updateLike(
+    id
+  );
+
+  await updateSave(
+    id
+  );
+
+  loadComments(
+    id
+  );
+
+  /* LIKE */
+
+  $('#like')?.addEventListener(
+    'click',
+    async () => {
+
+      const u =
+        await currentUser();
+
+      if (!u) {
+
+        location.href =
+          'auth.html';
+
+        return;
+      }
+
+      const {
+        data
+      } =
+        await s
+          .from('likes')
+          .select(
+            'video_id'
+          )
+          .eq(
+            'video_id',
+            id
+          )
+          .eq(
+            'user_id',
+            u.id
+          )
+          .maybeSingle();
+
+      if (data) {
+
+        await s
+          .from('likes')
+          .delete()
+          .eq(
+            'video_id',
+            id
+          )
+          .eq(
+            'user_id',
+            u.id
+          );
+
+      } else {
+
+        await s
+          .from('likes')
+          .insert({
+            video_id:
+              id,
+
+            user_id:
+              u.id
+          });
+      }
+
+      updateLike(
+        id
+      );
+    }
+  );
+
+  /* SAVE */
+
+  $('#save')?.addEventListener(
+    'click',
+    async () => {
+
+      const u =
+        await currentUser();
+
+      if (!u) {
+
+        location.href =
+          'auth.html';
+
+        return;
+      }
+
+      const {
+        data
+      } =
+        await s
+          .from('saved_videos')
+          .select(
+            'video_id'
+          )
+          .eq(
+            'video_id',
+            id
+          )
+          .eq(
+            'user_id',
+            u.id
+          )
+          .maybeSingle();
+
+      if (data) {
+
+        await s
+          .from('saved_videos')
+          .delete()
+          .eq(
+            'video_id',
+            id
+          )
+          .eq(
+            'user_id',
+            u.id
+          );
+
+      } else {
+
+        await s
+          .from('saved_videos')
+          .insert({
+            video_id:
+              id,
+
+            user_id:
+              u.id
+          });
+      }
+
+      updateSave(
+        id
+      );
+    }
+  );
+
+  /* SHARE */
+
+  $('#share')?.addEventListener(
+    'click',
+    async () => {
+
+      try {
+
+        await navigator.clipboard
+          .writeText(
+            location.href
+          );
+
+        toast(
+          'Link copied'
+        );
+
+      } catch {
+
+        toast(
+          'Copy the page URL'
+        );
+      }
+    }
+  );
+
+  /* SUBSCRIBE */
+
+  $('#subscribe')?.addEventListener(
+    'click',
+    () =>
+      subscribe(
+        v.owner_id
+      )
+  );
+
+  /* COMMENT */
+
+  $('#commentBtn')?.addEventListener(
+    'click',
+    async () => {
+
+      const u =
+        await currentUser();
+
+      if (!u) {
+
+        location.href =
+          'auth.html';
+
+        return;
+      }
+
+      const content =
+        $('#commentInput')
+          ?.value
+          .trim();
+
+      if (!content)
+        return;
+
+      const r =
+        await s
+          .from('comments')
+          .insert({
+            video_id:
+              id,
+
+            user_id:
+              u.id,
+
+            content
+          });
+
+      if (r.error) {
+
+        toast(
+          r.error.message
+        );
+
+        return;
+      }
+
+      $('#commentInput')
+        .value = '';
+
+      loadComments(
+        id
+      );
+    }
+  );
+}
+
+/* =========================================
+   WATCH ROUTER
+========================================= */
+
+async function watchPage() {
+
+  const params =
+    new URLSearchParams(
+      location.search
+    );
+
+  const youtubeId =
+    params.get(
+      'youtube'
+    );
+
+  const localId =
+    params.get(
+      'id'
+    );
+
+  if (youtubeId) {
+
+    await youtubeWatchPage(
+      youtubeId
+    );
+
+    return;
+  }
+
+  if (localId) {
+
+    await localWatchPage(
+      localId
+    );
+  }
 }
 
 /* =========================================
@@ -667,18 +1996,37 @@ async function watchPage() {
 ========================================= */
 
 async function recordHistory(id) {
-  const s = getSb();
-  const u = await currentUser();
 
-  if (u && s) {
-    await s.from('watch_history').upsert(
-      {
-        user_id: u.id,
-        video_id: id,
-        watched_at: new Date().toISOString()
-      },
-      { onConflict: 'user_id,video_id' }
-    );
+  const s =
+    getSb();
+
+  const u =
+    await currentUser();
+
+  if (
+    u &&
+    s
+  ) {
+
+    await s
+      .from('watch_history')
+      .upsert(
+        {
+          user_id:
+            u.id,
+
+          video_id:
+            id,
+
+          watched_at:
+            new Date()
+              .toISOString()
+        },
+        {
+          onConflict:
+            'user_id,video_id'
+        }
+      );
   }
 }
 
@@ -687,21 +2035,49 @@ async function recordHistory(id) {
 ========================================= */
 
 async function updateLike(id) {
-  const s = getSb();
-  const u = await currentUser();
-  const b = $('#like');
 
-  if (!b || !s) return;
-  if (!u) return (b.textContent = '👍 Like');
+  const s =
+    getSb();
 
-  const { data } = await s
-    .from('likes')
-    .select('video_id')
-    .eq('video_id', id)
-    .eq('user_id', u.id)
-    .maybeSingle();
+  const u =
+    await currentUser();
 
-  b.textContent = data ? '👍 Liked' : '👍 Like';
+  const b =
+    $('#like');
+
+  if (!b || !s)
+    return;
+
+  if (!u) {
+
+    b.textContent =
+      '👍 Like';
+
+    return;
+  }
+
+  const {
+    data
+  } =
+    await s
+      .from('likes')
+      .select(
+        'video_id'
+      )
+      .eq(
+        'video_id',
+        id
+      )
+      .eq(
+        'user_id',
+        u.id
+      )
+      .maybeSingle();
+
+  b.textContent =
+    data
+      ? '👍 Liked'
+      : '👍 Like';
 }
 
 /* =========================================
@@ -709,21 +2085,49 @@ async function updateLike(id) {
 ========================================= */
 
 async function updateSave(id) {
-  const s = getSb();
-  const u = await currentUser();
-  const b = $('#save');
 
-  if (!b || !s) return;
-  if (!u) return (b.textContent = '💾 Save');
+  const s =
+    getSb();
 
-  const { data } = await s
-    .from('saved_videos')
-    .select('video_id')
-    .eq('video_id', id)
-    .eq('user_id', u.id)
-    .maybeSingle();
+  const u =
+    await currentUser();
 
-  b.textContent = data ? '💾 Saved' : '💾 Save';
+  const b =
+    $('#save');
+
+  if (!b || !s)
+    return;
+
+  if (!u) {
+
+    b.textContent =
+      '💾 Save';
+
+    return;
+  }
+
+  const {
+    data
+  } =
+    await s
+      .from('saved_videos')
+      .select(
+        'video_id'
+      )
+      .eq(
+        'video_id',
+        id
+      )
+      .eq(
+        'user_id',
+        u.id
+      )
+      .maybeSingle();
+
+  b.textContent =
+    data
+      ? '💾 Saved'
+      : '💾 Save';
 }
 
 /* =========================================
@@ -731,36 +2135,87 @@ async function updateSave(id) {
 ========================================= */
 
 async function loadComments(id) {
-  const s = getSb();
-  if (!s) return;
 
-  const { data, error } = await s
-    .from('comments')
-    .select('content,created_at,profiles(username)')
-    .eq('video_id', id)
-    .order('created_at', { ascending: false });
+  const s =
+    getSb();
+
+  if (!s)
+    return;
+
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('comments')
+      .select(
+        'content,created_at,profiles(username)'
+      )
+      .eq(
+        'video_id',
+        id
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      );
 
   if (error) {
-    console.error(error);
+
+    console.error(
+      error
+    );
+
     return;
   }
 
   if ($('#comments')) {
+
     $('#comments').innerHTML =
       (data || [])
         .map(
           c => `
-          <div class="comment">
-            ${avatar(c.profiles?.username || 'U')}
-            <div>
-              <strong>${esc(c.profiles?.username || 'User')}</strong>
-              <p>${esc(c.content)}</p>
-              <small class="muted">${new Date(c.created_at).toLocaleString()}</small>
+            <div class="comment">
+
+              ${avatar(
+                c.profiles?.username ||
+                'U'
+              )}
+
+              <div>
+
+                <strong>
+                  ${esc(
+                    c.profiles?.username ||
+                    'User'
+                  )}
+                </strong>
+
+                <p>
+                  ${esc(
+                    c.content
+                  )}
+                </p>
+
+                <small class="muted">
+                  ${new Date(
+                    c.created_at
+                  ).toLocaleString()}
+                </small>
+
+              </div>
+
             </div>
-          </div>
-        `
+          `
         )
-        .join('') || '<p class="muted">No comments yet.</p>';
+        .join('') ||
+      `
+        <p class="muted">
+          No comments yet.
+        </p>
+      `;
   }
 }
 
@@ -768,34 +2223,86 @@ async function loadComments(id) {
    SUBSCRIBE
 ========================================= */
 
-async function subscribe(channelId) {
-  const s = getSb();
-  const u = await currentUser();
+async function subscribe(
+  channelId
+) {
 
-  if (!u || !s) return (location.href = 'auth.html');
-  if (u.id === channelId) return toast('This is your channel.');
+  const s =
+    getSb();
 
-  const { data } = await s
-    .from('subscriptions')
-    .select('channel_id')
-    .eq('subscriber_id', u.id)
-    .eq('channel_id', channelId)
-    .maybeSingle();
+  const u =
+    await currentUser();
+
+  if (!u || !s) {
+
+    location.href =
+      'auth.html';
+
+    return;
+  }
+
+  if (
+    u.id ===
+    channelId
+  ) {
+
+    toast(
+      'This is your channel.'
+    );
+
+    return;
+  }
+
+  const {
+    data
+  } =
+    await s
+      .from('subscriptions')
+      .select(
+        'channel_id'
+      )
+      .eq(
+        'subscriber_id',
+        u.id
+      )
+      .eq(
+        'channel_id',
+        channelId
+      )
+      .maybeSingle();
 
   if (data) {
+
     await s
       .from('subscriptions')
       .delete()
-      .eq('subscriber_id', u.id)
-      .eq('channel_id', channelId);
+      .eq(
+        'subscriber_id',
+        u.id
+      )
+      .eq(
+        'channel_id',
+        channelId
+      );
+
   } else {
-    await s.from('subscriptions').insert({
-      subscriber_id: u.id,
-      channel_id: channelId
-    });
+
+    await s
+      .from('subscriptions')
+      .insert({
+        subscriber_id:
+          u.id,
+
+        channel_id:
+          channelId
+      });
   }
 
-  toast(data ? 'Unsubscribed' : 'Subscribed');
+  toast(
+    data
+      ? 'Unsubscribed'
+      : 'Subscribed'
+  );
 }
 
 /* =========================================
@@ -803,28 +2310,31 @@ async function subscribe(channelId) {
 ========================================= */
 
 async function loadTrending() {
-  const s = getSb();
-  const e = $('#trending');
 
-  if (!e || !s) return;
+  const e =
+    $('#trending');
+
+  if (!e)
+    return;
 
   loading(e);
 
-  const { data, error } = await s
-    .from('videos')
-    .select('*,profiles(username)')
-    .order('views', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(40);
-
-  if (error) {
-    e.innerHTML = `<div class="notice">${esc(error.message)}</div>`;
-    return;
-  }
+  const yt =
+    await loadYouTubePopular(
+      20
+    );
 
   e.innerHTML =
-    (data || []).map(card).join('') ||
-    `<div class="notice">No videos yet.</div>`;
+    yt
+      .map(
+        youtubeCard
+      )
+      .join('') ||
+    `
+      <div class="notice">
+        No YouTube videos found.
+      </div>
+    `;
 }
 
 /* =========================================
@@ -832,43 +2342,110 @@ async function loadTrending() {
 ========================================= */
 
 async function channelPage() {
-  const s = getSb();
-  if (!$('#channelVideos') || !s) return;
 
-  const u = await currentUser();
+  const s =
+    getSb();
+
+  if (
+    !$('#channelVideos') ||
+    !s
+  )
+    return;
+
+  const u =
+    await currentUser();
 
   if (!u) {
-    $('#channelVideos').innerHTML = `
-      <div class="notice">Sign in to see your channel.</div>
-    `;
+
+    $('#channelVideos').innerHTML =
+      `
+      <div class="notice">
+        Sign in to see your channel.
+      </div>
+      `;
+
     return;
   }
 
-  const { data: p } = await s
-    .from('profiles')
-    .select('*')
-    .eq('id', u.id)
-    .single();
+  const {
+    data: p
+  } =
+    await s
+      .from('profiles')
+      .select('*')
+      .eq(
+        'id',
+        u.id
+      )
+      .single();
 
-  if ($('#channelName')) $('#channelName').textContent = p?.username || u.email.split('@')[0];
-  if ($('#channelAvatar')) $('#channelAvatar').textContent = initials(u);
+  if ($('#channelName')) {
 
-  const { count } = await s
-    .from('subscriptions')
-    .select('*', { count: 'exact', head: true })
-    .eq('channel_id', u.id);
+    $('#channelName').textContent =
+      p?.username ||
+      u.email.split('@')[0];
+  }
 
-  if ($('#subs')) $('#subs').textContent = `${fmt(count)} subscribers`;
+  if ($('#channelAvatar')) {
 
-  const { data } = await s
-    .from('videos')
-    .select('*,profiles(username)')
-    .eq('owner_id', u.id)
-    .order('created_at', { ascending: false });
+    $('#channelAvatar').textContent =
+      initials(u);
+  }
 
-  $('#channelVideos').innerHTML =
-    (data || []).map(card).join('') ||
-    `<div class="notice">No videos yet.</div>`;
+  const {
+    count
+  } =
+    await s
+      .from('subscriptions')
+      .select(
+        '*',
+        {
+          count:
+            'exact',
+          head:
+            true
+        }
+      )
+      .eq(
+        'channel_id',
+        u.id
+      );
+
+  if ($('#subs')) {
+
+    $('#subs').textContent =
+      `${fmt(count)} subscribers`;
+  }
+
+  const {
+    data
+  } =
+    await s
+      .from('videos')
+      .select(
+        '*,profiles(username)'
+      )
+      .eq(
+        'owner_id',
+        u.id
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      );
+
+  $('#channelVideos')
+    .innerHTML =
+      (data || [])
+        .map(card)
+        .join('') ||
+      `
+        <div class="notice">
+          No videos yet.
+        </div>
+      `;
 }
 
 /* =========================================
@@ -876,37 +2453,90 @@ async function channelPage() {
 ========================================= */
 
 async function subscriptionsPage() {
-  const s = getSb();
-  if (!$('#subVideos') || !s) return;
 
-  const u = await currentUser();
+  const s =
+    getSb();
+
+  if (
+    !$('#subVideos') ||
+    !s
+  )
+    return;
+
+  const u =
+    await currentUser();
 
   if (!u) {
-    $('#subVideos').innerHTML = `<div class="notice">Sign in to see subscriptions.</div>`;
+
+    $('#subVideos').innerHTML =
+      `
+      <div class="notice">
+        Sign in to see subscriptions.
+      </div>
+      `;
+
     return;
   }
 
-  const { data } = await s
-    .from('subscriptions')
-    .select('channel_id')
-    .eq('subscriber_id', u.id);
+  const {
+    data
+  } =
+    await s
+      .from('subscriptions')
+      .select(
+        'channel_id'
+      )
+      .eq(
+        'subscriber_id',
+        u.id
+      );
 
-  const ids = (data || []).map(x => x.channel_id);
+  const ids =
+    (data || [])
+      .map(
+        x =>
+          x.channel_id
+      );
 
   if (!ids.length) {
-    $('#subVideos').innerHTML = `<div class="notice">No subscriptions yet.</div>`;
+
+    $('#subVideos').innerHTML =
+      `
+      <div class="notice">
+        No subscriptions yet.
+      </div>
+      `;
+
     return;
   }
 
-  const r = await s
-    .from('videos')
-    .select('*,profiles(username)')
-    .in('owner_id', ids)
-    .order('created_at', { ascending: false });
+  const r =
+    await s
+      .from('videos')
+      .select(
+        '*,profiles(username)'
+      )
+      .in(
+        'owner_id',
+        ids
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      );
 
-  $('#subVideos').innerHTML =
-    (r.data || []).map(card).join('') ||
-    `<div class="notice">No new videos.</div>`;
+  $('#subVideos')
+    .innerHTML =
+      (r.data || [])
+        .map(card)
+        .join('') ||
+      `
+        <div class="notice">
+          No new videos.
+        </div>
+      `;
 }
 
 /* =========================================
@@ -914,29 +2544,74 @@ async function subscriptionsPage() {
 ========================================= */
 
 async function libraryPage() {
-  const s = getSb();
-  if (!$('#libraryVideos') || !s) return;
 
-  const u = await currentUser();
+  const s =
+    getSb();
+
+  if (
+    !$('#libraryVideos') ||
+    !s
+  )
+    return;
+
+  const u =
+    await currentUser();
 
   if (!u) {
-    $('#libraryVideos').innerHTML = `<div class="notice">Sign in to use your library.</div>`;
+
+    $('#libraryVideos').innerHTML =
+      `
+      <div class="notice">
+        Sign in to use your library.
+      </div>
+      `;
+
     return;
   }
 
-  const { data, error } = await s
-    .from('saved_videos')
-    .select('videos(*,profiles(username))')
-    .eq('user_id', u.id);
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('saved_videos')
+      .select(
+        'videos(*,profiles(username))'
+      )
+      .eq(
+        'user_id',
+        u.id
+      );
 
   if (error) {
-    $('#libraryVideos').innerHTML = `<div class="notice">${esc(error.message)}</div>`;
+
+    $('#libraryVideos').innerHTML =
+      `
+      <div class="notice">
+        ${esc(
+          error.message
+        )}
+      </div>
+      `;
+
     return;
   }
 
-  $('#libraryVideos').innerHTML =
-    (data || []).map(x => x.videos).filter(Boolean).map(card).join('') ||
-    `<div class="notice">No saved videos.</div>`;
+  $('#libraryVideos')
+    .innerHTML =
+      (data || [])
+        .map(
+          x =>
+            x.videos
+        )
+        .filter(Boolean)
+        .map(card)
+        .join('') ||
+      `
+        <div class="notice">
+          No saved videos.
+        </div>
+      `;
 }
 
 /* =========================================
@@ -944,30 +2619,80 @@ async function libraryPage() {
 ========================================= */
 
 async function historyPage() {
-  const s = getSb();
-  if (!$('#historyVideos') || !s) return;
 
-  const u = await currentUser();
+  const s =
+    getSb();
+
+  if (
+    !$('#historyVideos') ||
+    !s
+  )
+    return;
+
+  const u =
+    await currentUser();
 
   if (!u) {
-    $('#historyVideos').innerHTML = `<div class="notice">Sign in to see history.</div>`;
+
+    $('#historyVideos').innerHTML =
+      `
+      <div class="notice">
+        Sign in to see history.
+      </div>
+      `;
+
     return;
   }
 
-  const { data, error } = await s
-    .from('watch_history')
-    .select('watched_at,videos(*,profiles(username))')
-    .eq('user_id', u.id)
-    .order('watched_at', { ascending: false });
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('watch_history')
+      .select(
+        'watched_at,videos(*,profiles(username))'
+      )
+      .eq(
+        'user_id',
+        u.id
+      )
+      .order(
+        'watched_at',
+        {
+          ascending: false
+        }
+      );
 
   if (error) {
-    $('#historyVideos').innerHTML = `<div class="notice">${esc(error.message)}</div>`;
+
+    $('#historyVideos').innerHTML =
+      `
+      <div class="notice">
+        ${esc(
+          error.message
+        )}
+      </div>
+      `;
+
     return;
   }
 
-  $('#historyVideos').innerHTML =
-    (data || []).map(x => x.videos).filter(Boolean).map(card).join('') ||
-    `<div class="notice">No history yet.</div>`;
+  $('#historyVideos')
+    .innerHTML =
+      (data || [])
+        .map(
+          x =>
+            x.videos
+        )
+        .filter(Boolean)
+        .map(card)
+        .join('') ||
+      `
+        <div class="notice">
+          No history yet.
+        </div>
+      `;
 }
 
 /* =========================================
@@ -975,59 +2700,168 @@ async function historyPage() {
 ========================================= */
 
 async function studioPage() {
-  const s = getSb();
-  if (!$('#studioStats') || !s) return;
 
-  const u = await currentUser();
+  const s =
+    getSb();
+
+  if (
+    !$('#studioStats') ||
+    !s
+  )
+    return;
+
+  const u =
+    await currentUser();
 
   if (!u) {
-    $('#studioStats').innerHTML = `<div class="notice">Sign in to open Studio.</div>`;
+
+    $('#studioStats').innerHTML =
+      `
+      <div class="notice">
+        Sign in to open Studio.
+      </div>
+      `;
+
     return;
   }
 
-  const { data, error } = await s
-    .from('videos')
-    .select('id,title,views,created_at')
-    .eq('owner_id', u.id)
-    .order('views', { ascending: false });
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('videos')
+      .select(
+        'id,title,views,created_at'
+      )
+      .eq(
+        'owner_id',
+        u.id
+      )
+      .order(
+        'views',
+        {
+          ascending: false
+        }
+      );
 
   if (error) {
-    $('#studioStats').innerHTML = `<div class="notice">${esc(error.message)}</div>`;
+
+    $('#studioStats').innerHTML =
+      `
+      <div class="notice">
+        ${esc(
+          error.message
+        )}
+      </div>
+      `;
+
     return;
   }
 
-  const v = data || [];
-  const total = v.reduce((a, x) => a + Number(x.views || 0), 0);
+  const v =
+    data || [];
 
-  $('#studioStats').innerHTML = `
-    <div class="statGrid">
-      <div class="statCard">
-        <strong>${fmt(v.length)}</strong>
-        <span>Videos</span>
-      </div>
-      <div class="statCard">
-        <strong>${fmt(total)}</strong>
-        <span>Total views</span>
-      </div>
-      <div class="statCard">
-        <strong>${fmt(v[0]?.views || 0)}</strong>
-        <span>Top video views</span>
-      </div>
-    </div>
+  const total =
+    v.reduce(
+      (a, x) =>
+        a +
+        Number(
+          x.views || 0
+        ),
+      0
+    );
 
-    <div class="panel">
-      <h2>Top videos</h2>
-      ${
-        v.slice(0, 10).map((x, i) => `
-          <a class="studioRow" href="watch.html?id=${x.id}">
-            <span>#${i + 1}</span>
-            <span>${esc(x.title)}</span>
-            <b>${fmt(x.views)} views</b>
-          </a>
-        `).join('') || '<p class="muted">Upload your first video.</p>'
-      }
-    </div>
-  `;
+  $('#studioStats')
+    .innerHTML =
+      `
+      <div class="statGrid">
+
+        <div class="statCard">
+          <strong>
+            ${fmt(
+              v.length
+            )}
+          </strong>
+
+          <span>
+            Videos
+          </span>
+        </div>
+
+        <div class="statCard">
+          <strong>
+            ${fmt(
+              total
+            )}
+          </strong>
+
+          <span>
+            Total views
+          </span>
+        </div>
+
+        <div class="statCard">
+          <strong>
+            ${fmt(
+              v[0]?.views ||
+              0
+            )}
+          </strong>
+
+          <span>
+            Top video views
+          </span>
+        </div>
+
+      </div>
+
+      <div class="panel">
+
+        <h2>
+          Top videos
+        </h2>
+
+        ${
+          v
+            .slice(0, 10)
+            .map(
+              (x, i) =>
+                `
+                <a
+                  class="studioRow"
+                  href="watch.html?id=${x.id}"
+                >
+
+                  <span>
+                    #${i + 1}
+                  </span>
+
+                  <span>
+                    ${esc(
+                      x.title
+                    )}
+                  </span>
+
+                  <b>
+                    ${fmt(
+                      x.views
+                    )} views
+                  </b>
+
+                </a>
+                `
+            )
+            .join('') ||
+          `
+            <p class="muted">
+              Upload your first video.
+            </p>
+          `
+        }
+
+      </div>
+      `;
 }
 
 /* =========================================
@@ -1035,13 +2869,42 @@ async function studioPage() {
 ========================================= */
 
 function initChips() {
-  document.querySelectorAll('.chip').forEach(b => {
-    b.onclick = () => {
-      document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      loadVideos('#videoGrid', '', 40, b.dataset.category || '');
-    };
-  });
+
+  document
+    .querySelectorAll(
+      '.chip'
+    )
+    .forEach(
+      b => {
+
+        b.onclick =
+          () => {
+
+            document
+              .querySelectorAll(
+                '.chip'
+              )
+              .forEach(
+                x =>
+                  x.classList.remove(
+                    'active'
+                  )
+              );
+
+            b.classList.add(
+              'active'
+            );
+
+            loadVideos(
+              '#videoGrid',
+              '',
+              40,
+              b.dataset.category ||
+                ''
+            );
+          };
+      }
+    );
 }
 
 /* =========================================
@@ -1049,9 +2912,17 @@ function initChips() {
 ========================================= */
 
 function searchGo() {
-  const q = $('#topSearch')?.value.trim();
+
+  const q =
+    $('#topSearch')
+      ?.value
+      .trim();
+
   if (q) {
-    location.href = 'search.html?q=' + encodeURIComponent(q);
+
+    location.href =
+      'search.html?q=' +
+      encodeURIComponent(q);
   }
 }
 
@@ -1060,93 +2931,255 @@ function searchGo() {
 ========================================= */
 
 async function init() {
+
   await header();
 
-  const m = $('#menuBtn');
-  const side = $('.side');
+  const m =
+    $('#menuBtn');
 
-  if (m && side) {
-    m.onclick = e => {
-      e.stopPropagation();
-      side.classList.toggle('open');
-    };
+  const side =
+    $('.side');
 
-    side.querySelectorAll('a').forEach(a => {
-      a.onclick = () => side.classList.remove('open');
-    });
+  if (
+    m &&
+    side
+  ) {
 
-    document.addEventListener('click', e => {
-      if (
-        side.classList.contains('open') &&
-        !side.contains(e.target) &&
-        !m.contains(e.target)
-      ) {
-        side.classList.remove('open');
+    m.onclick =
+      e => {
+
+        e.stopPropagation();
+
+        side.classList.toggle(
+          'open'
+        );
+      };
+
+    side
+      .querySelectorAll(
+        'a'
+      )
+      .forEach(
+        a => {
+
+          a.onclick =
+            () =>
+              side.classList.remove(
+                'open'
+              );
+        }
+      );
+
+    document.addEventListener(
+      'click',
+      e => {
+
+        if (
+          side.classList.contains(
+            'open'
+          ) &&
+          !side.contains(
+            e.target
+          ) &&
+          !m.contains(
+            e.target
+          )
+        ) {
+
+          side.classList.remove(
+            'open'
+          );
+        }
       }
-    });
+    );
   }
 
-  $('#searchBtn')?.addEventListener('click', searchGo);
+  $('#searchBtn')
+    ?.addEventListener(
+      'click',
+      searchGo
+    );
 
-  $('#topSearch')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      searchGo();
-    }
-  });
+  $('#topSearch')
+    ?.addEventListener(
+      'keydown',
+      e => {
 
-  $('#themeBtn')?.addEventListener('click', toggleTheme);
+        if (
+          e.key ===
+          'Enter'
+        ) {
 
-  $('#mobileSearchBtn')?.addEventListener('click', () =>
-    $('#searchPanel')?.classList.toggle('show')
-  );
+          e.preventDefault();
+
+          searchGo();
+        }
+      }
+    );
+
+  $('#themeBtn')
+    ?.addEventListener(
+      'click',
+      toggleTheme
+    );
+
+  $('#mobileSearchBtn')
+    ?.addEventListener(
+      'click',
+      () =>
+        $('#searchPanel')
+          ?.classList.toggle(
+            'show'
+          )
+    );
 
   authPage();
+
   uploadPage();
+
   watchPage();
+
   channelPage();
+
   subscriptionsPage();
+
   libraryPage();
+
   historyPage();
+
   studioPage();
 
+  /* HOME */
+
   if ($('#videoGrid')) {
-    loadVideos();
+
+    loadVideos(
+      '#videoGrid'
+    );
   }
+
+  /* SEARCH PAGE */
 
   if ($('#allVideos')) {
-    const q = new URLSearchParams(location.search).get('q') || '';
+
+    const q =
+      new URLSearchParams(
+        location.search
+      ).get('q') ||
+      '';
+
     if ($('#query')) {
-      $('#query').textContent = q ? `Search results for “${q}”` : 'Search';
+
+      $('#query')
+        .textContent =
+          q
+            ? `Search results for “${q}”`
+            : 'Search';
     }
-    loadVideos('#allVideos', q);
+
+    loadVideos(
+      '#allVideos',
+      q,
+      40
+    );
   }
 
+  /* TRENDING */
+
   if ($('#trending')) {
+
     loadTrending();
   }
 
   initChips();
 }
 
-document.addEventListener('DOMContentLoaded', init);
-
 /* =========================================
-   MINI PLAYER (SCROLL HANDLER)
+   START
 ========================================= */
 
-document.addEventListener('scroll', () => {
-  const vid = document.querySelector('video');
+document.addEventListener(
+  'DOMContentLoaded',
+  init
+);
 
-  if (!vid || vid.paused || vid.currentTime < 1) {
-    return;
+/* =========================================
+   MINI PLAYER
+========================================= */
+
+document.addEventListener(
+  'scroll',
+  () => {
+
+    const video =
+      document.querySelector(
+        '.playerInner'
+      );
+
+    if (
+      !video ||
+      video.paused ||
+      video.currentTime <
+        1
+    ) {
+
+      return;
+    }
+
+    const nearTop =
+      video
+        .getBoundingClientRect()
+        .bottom < 0;
+
+    let mini =
+      document.getElementById(
+        'divineMiniPlayer'
+      );
+
+    if (nearTop) {
+
+      if (!mini) {
+
+        mini =
+          video.cloneNode(
+            true
+          );
+
+        mini.id =
+          'divineMiniPlayer';
+
+        mini.muted =
+          true;
+
+        mini.controls =
+          true;
+
+        mini.style.cssText =
+          `
+          position:fixed;
+          right:12px;
+          bottom:76px;
+          width:180px;
+          aspect-ratio:16/9;
+          z-index:9999;
+          background:#000;
+          border-radius:12px;
+          box-shadow:0 8px 30px #0008;
+          `;
+
+        document.body.appendChild(
+          mini
+        );
+      }
+
+      mini.play()
+        .catch(
+          () => {}
+        );
+
+    } else if (mini) {
+
+      mini.remove();
+    }
   }
-
-  const nearTop = vid.getBoundingClientRect().bottom < 0;
-
-  if (nearTop) {
-    vid.classList.add('mini-player');
-  } else {
-    vid.classList.remove('mini-player');
-  }
-});
+);
