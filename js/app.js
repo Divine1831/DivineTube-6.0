@@ -541,7 +541,6 @@ async function header() {
 
           if (s) {
             await s.auth.signOut();
-
             location.href =
               'index.html';
           }
@@ -755,68 +754,12 @@ async function authPage() {
   if (!f || !s)
     return;
 
-  const signupCheckbox =
-    $('#signup');
-
-  const usernameInput =
-    $('#username');
-
-  const submit =
-    $('#authSubmit');
-
-  /*
-    The checkbox controls the mode.
-
-    unchecked = login
-    checked   = signup
-  */
-
-  function updateAuthMode() {
-    const signup =
-      signupCheckbox?.checked === true;
-
-    window.isSignup =
-      signup;
-
-    if (usernameInput) {
-      usernameInput.style.display =
-        signup
-          ? ''
-          : 'none';
-
-      usernameInput.required =
-        signup;
-
-      if (!signup) {
-        usernameInput.value =
-          '';
-      }
-    }
-
-    if (submit) {
-      submit.textContent =
-        signup
-          ? 'Create account'
-          : 'Log in';
-    }
-  }
-
-  signupCheckbox?.addEventListener(
-    'change',
-    updateAuthMode
-  );
-
-  updateAuthMode();
-
   f.onsubmit =
     async e => {
       e.preventDefault();
 
       const signup =
-        signupCheckbox?.checked === true;
-
-      window.isSignup =
-        signup;
+        window.isSignup === true;
 
       const email =
         $('#email')
@@ -834,6 +777,9 @@ async function authPage() {
 
       const msg =
         $('#msg');
+
+      const submit =
+        $('#authSubmit');
 
       if (
         !email ||
@@ -854,19 +800,6 @@ async function authPage() {
         if (msg) {
           msg.textContent =
             'Please choose a username.';
-        }
-
-        usernameInput?.focus();
-
-        return;
-      }
-
-      if (
-        password.length < 6
-      ) {
-        if (msg) {
-          msg.textContent =
-            'Password must be at least 6 characters.';
         }
 
         return;
@@ -892,16 +825,11 @@ async function authPage() {
       try {
         let r;
 
-        /* =========================
-           SIGN UP
-        ========================= */
-
         if (signup) {
           r =
             await s.auth.signUp({
               email,
               password,
-
               options: {
                 data: {
                   username:
@@ -909,13 +837,7 @@ async function authPage() {
                 }
               }
             });
-        }
-
-        /* =========================
-           LOGIN
-        ========================= */
-
-        else {
+        } else {
           r =
             await s.auth.signInWithPassword({
               email,
@@ -932,10 +854,6 @@ async function authPage() {
           return;
         }
 
-        /* =========================
-           EMAIL VERIFICATION
-        ========================= */
-
         if (
           signup &&
           !r.data.session
@@ -948,15 +866,9 @@ async function authPage() {
           return;
         }
 
-        /* =========================
-           SUCCESS
-        ========================= */
-
         if (msg) {
           msg.textContent =
-            signup
-              ? 'Account created successfully!'
-              : 'Login successful!';
+            'Login successful!';
         }
 
         setTimeout(
@@ -966,19 +878,13 @@ async function authPage() {
           },
           500
         );
-
       } catch (error) {
-        console.error(
-          'Authentication error:',
-          error
-        );
+        console.error(error);
 
         if (msg) {
           msg.textContent =
-            error.message ||
             'Something went wrong. Please try again.';
         }
-
       } finally {
         if (submit) {
           submit.disabled =
@@ -992,15 +898,10 @@ async function authPage() {
       }
     };
 
-  /* =========================
-     FORGOT PASSWORD
-  ========================= */
-
   $('#forgotPassword')
     ?.addEventListener(
       'click',
       async () => {
-
         const email =
           $('#email')
             ?.value
@@ -1014,8 +915,6 @@ async function authPage() {
             msg.textContent =
               'Enter your email first.';
           }
-
-          $('#email')?.focus();
 
           return;
         }
@@ -1501,7 +1400,6 @@ async function uploadPage() {
           },
           700
         );
-
       } catch (error) {
         console.error(
           'Upload error:',
@@ -1604,17 +1502,15 @@ async function youtubeWatchPage(
       snippet.title ||
       ''
     );
-
   } catch (error) {
     console.error(
       'YouTube watch error:',
       error
     );
 
-    player.innerHTML =
-      youtubeErrorHtml(
-        error
-      );
+    player.innerHTML = youtubeErrorHtml(
+      error
+    );
   }
 }
 
@@ -1647,7 +1543,6 @@ async function loadYouTubeRelated(
           No related videos.
         </div>
       `;
-
   } catch (error) {
     console.error(
       'Related YouTube error:',
@@ -1961,7 +1856,6 @@ async function localWatchPage(id) {
         toast(
           'Link copied'
         );
-
       } catch {
         toast(
           'Copy the page URL'
@@ -2398,7 +2292,6 @@ async function loadTrending() {
           No YouTube videos found.
         </div>
       `;
-
   } catch (error) {
     console.error(
       'Trending YouTube error:',
@@ -3039,7 +2932,6 @@ async function init() {
           'Enter'
         ) {
           e.preventDefault();
-
           searchGo();
         }
       }
@@ -3196,7 +3088,6 @@ document.addEventListener(
         .catch(
           () => {}
         );
-
     } else if (mini) {
       mini.remove();
     }
