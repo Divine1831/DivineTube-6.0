@@ -1,1 +1,346 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Auth | DivineTube</title><link rel="stylesheet" href="css/style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/layout.js" defer></script><script src="js/app.js" defer></script></head><body><div id="app"></div><main class="page"><div class="authWrap"><div class="authCard"><div class="brand">▶ Divine<span>Tube</span></div><h1>Welcome</h1><form id="authForm"><input id="username" placeholder="Username (sign up)"><input id="email" type="email" placeholder="Email" required><input id="password" type="password" placeholder="Password" minlength="6" required><label class="switchRow"><input id="signup" type="checkbox"> Create account</label><button class="btn primary" type="submit">Continue</button></form><p id="msg" class="notice"></p></div></div></main><div id="toast" class="toast"></div></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Create account | DivineTube</title>
+
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/layout.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+
+<body>
+
+  <div id="app"></div>
+
+  <main class="page">
+
+    <div class="authWrap">
+
+      <div class="authCard">
+
+        <div class="brand">
+          ▶ Divine<span>Tube</span>
+        </div>
+
+        <h1 id="authTitle">
+          Create your account
+        </h1>
+
+        <p
+          id="authSubtitle"
+          class="muted"
+          style="margin-bottom:22px;"
+        >
+          Join DivineTube and start watching, uploading and sharing videos.
+        </p>
+
+        <form id="authForm">
+
+          <!-- Username -->
+          <div id="usernameWrap">
+
+            <label
+              for="username"
+              class="muted"
+              style="display:block;margin-bottom:7px;"
+            >
+              Username
+            </label>
+
+            <input
+              id="username"
+              type="text"
+              placeholder="Choose a username"
+              autocomplete="username"
+              maxlength="30"
+            >
+
+          </div>
+
+          <!-- Email -->
+          <div style="margin-top:14px;">
+
+            <label
+              for="email"
+              class="muted"
+              style="display:block;margin-bottom:7px;"
+            >
+              Email
+            </label>
+
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              autocomplete="email"
+              required
+            >
+
+          </div>
+
+          <!-- Password -->
+          <div style="margin-top:14px;">
+
+            <label
+              for="password"
+              class="muted"
+              style="display:block;margin-bottom:7px;"
+            >
+              Password
+            </label>
+
+            <input
+              id="password"
+              type="password"
+              placeholder="Create a password"
+              autocomplete="new-password"
+              minlength="6"
+              required
+            >
+
+          </div>
+
+          <button
+            id="authSubmit"
+            class="btn primary"
+            type="submit"
+            style="width:100%;margin-top:20px;"
+          >
+            Create account
+          </button>
+
+        </form>
+
+        <p
+          id="msg"
+          class="notice"
+          style="margin-top:15px;"
+        ></p>
+
+        <!-- Forgot password -->
+        <button
+          id="forgotPassword"
+          type="button"
+          style="
+            display:none;
+            background:none;
+            border:0;
+            color:inherit;
+            cursor:pointer;
+            margin-top:10px;
+          "
+        >
+          Forgot password?
+        </button>
+
+        <!-- Switch login/signup -->
+        <div
+          style="
+            text-align:center;
+            margin-top:22px;
+            padding-top:18px;
+            border-top:1px solid rgba(128,128,128,.2);
+          "
+        >
+
+          <span
+            id="switchText"
+            class="muted"
+          >
+            Already have an account?
+          </span>
+
+          <button
+            id="switchAuth"
+            type="button"
+            style="
+              background:none;
+              border:0;
+              padding:0;
+              margin-left:5px;
+              color:#38bdf8;
+              font-weight:600;
+              cursor:pointer;
+            "
+          >
+            Sign in
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <div
+    id="toast"
+    class="toast"
+  ></div>
+
+
+  <script>
+
+    /*
+      DivineTube authentication mode
+
+      true  = Sign up
+      false = Login
+    */
+
+    window.isSignup = true;
+
+
+    const title =
+      document.getElementById(
+        'authTitle'
+      );
+
+    const subtitle =
+      document.getElementById(
+        'authSubtitle'
+      );
+
+    const usernameWrap =
+      document.getElementById(
+        'usernameWrap'
+      );
+
+    const username =
+      document.getElementById(
+        'username'
+      );
+
+    const password =
+      document.getElementById(
+        'password'
+      );
+
+    const submit =
+      document.getElementById(
+        'authSubmit'
+      );
+
+    const switchText =
+      document.getElementById(
+        'switchText'
+      );
+
+    const switchAuth =
+      document.getElementById(
+        'switchAuth'
+      );
+
+    const forgot =
+      document.getElementById(
+        'forgotPassword'
+      );
+
+
+    function updateAuthMode() {
+
+      if (window.isSignup) {
+
+        title.textContent =
+          'Create your account';
+
+        subtitle.textContent =
+          'Join DivineTube and start watching, uploading and sharing videos.';
+
+        usernameWrap.style.display =
+          'block';
+
+        username.required =
+          true;
+
+        username.autocomplete =
+          'username';
+
+        password.autocomplete =
+          'new-password';
+
+        submit.textContent =
+          'Create account';
+
+        switchText.textContent =
+          'Already have an account?';
+
+        switchAuth.textContent =
+          'Sign in';
+
+        forgot.style.display =
+          'none';
+
+      } else {
+
+        title.textContent =
+          'Sign in to DivineTube';
+
+        subtitle.textContent =
+          'Welcome back. Sign in to continue.';
+
+        usernameWrap.style.display =
+          'none';
+
+        username.required =
+          false;
+
+        password.autocomplete =
+          'current-password';
+
+        submit.textContent =
+          'Log in';
+
+        switchText.textContent =
+          "Don't have an account?";
+
+        switchAuth.textContent =
+          'Create account';
+
+        forgot.style.display =
+          'inline-block';
+
+      }
+
+    }
+
+
+    switchAuth.addEventListener(
+      'click',
+      () => {
+
+        window.isSignup =
+          !window.isSignup;
+
+        document.getElementById(
+          'msg'
+        ).textContent = '';
+
+        updateAuthMode();
+
+      }
+    );
+
+
+    updateAuthMode();
+
+  </script>
+
+</body>
+
+</html>
