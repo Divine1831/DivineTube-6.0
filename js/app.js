@@ -507,73 +507,103 @@ async function loadYouTubeSearch(
 ========================================= */
 
 async function header() {
-  const s =
-    getSb();
+  const s = getSb();
+  const u = await currentUser();
 
-  const u =
-    await currentUser();
-
-  const avatarEl =
-    $('#avatar');
-
-  const authLinkEl =
-    $('#authLink');
+  const avatarEl = $('#avatar');
+  const authLinkEl = $('#authLink');
 
   if (u) {
     if (avatarEl) {
-      avatarEl.textContent =
-        initials(u);
-
-      avatarEl.style.display =
-        'grid';
+      avatarEl.textContent = initials(u);
+      avatarEl.style.display = 'grid';
     }
 
     if (authLinkEl) {
-      authLinkEl.textContent =
-        'Sign out';
+      authLinkEl.textContent = 'Sign out';
+      authLinkEl.href = '#';
 
-      authLinkEl.href =
-        '#';
+      authLinkEl.onclick = async e => {
+        e.preventDefault();
 
-      authLinkEl.onclick =
-        async e => {
-          e.preventDefault();
+        if (!s) {
+          toast('Authentication is not available.');
+          return;
+        }
 
-          if (s) {
-            await s.auth.signOut();
-            location.href =
-              'index.html';
+        authLinkEl.textContent = 'Signing out…';
+        authLinkEl.style.pointerEvents = 'none';
+
+        try {
+          const { error } = await s.auth.signOut();
+
+          if (error) {
+            console.error(
+              'Sign out error:',
+              error
+            );
+
+            authLinkEl.textContent = 'Sign out';
+            authLinkEl.style.pointerEvents = '';
+
+            toast(
+              error.message ||
+              'Could not sign out.'
+            );
+
+            return;
           }
-        };
+
+          if (avatarEl) {
+            avatarEl.style.display = 'none';
+          }
+
+          authLinkEl.textContent = 'Sign in';
+          authLinkEl.href = 'auth.html';
+          authLinkEl.onclick = null;
+          authLinkEl.style.pointerEvents = '';
+
+          toast('You have been signed out.');
+
+          setTimeout(() => {
+            location.href = 'index.html';
+          }, 500);
+
+        } catch (error) {
+          console.error(
+            'Sign out error:',
+            error
+          );
+
+          authLinkEl.textContent = 'Sign out';
+          authLinkEl.style.pointerEvents = '';
+
+          toast(
+            'Something went wrong while signing out.'
+          );
+        }
+      };
     }
+
   } else {
     if (avatarEl) {
-      avatarEl.style.display =
-        'none';
+      avatarEl.style.display = 'none';
     }
 
     if (authLinkEl) {
-      authLinkEl.textContent =
-        'Sign in';
-
-      authLinkEl.href =
-        'auth.html';
-
-      authLinkEl.onclick =
-        null;
+      authLinkEl.textContent = 'Sign in';
+      authLinkEl.href = 'auth.html';
+      authLinkEl.onclick = null;
+      authLinkEl.style.pointerEvents = '';
     }
   }
 
   if (
-    localStorage.dt_theme ===
-    'light'
+    localStorage.dt_theme === 'light'
   ) {
-    document.body.classList.add(
-      'light'
-    );
+    document.body.classList.add('light');
   }
 }
-
 /* =========================================
    YOUTUBE ERROR DISPLAY
 ========================================= */
