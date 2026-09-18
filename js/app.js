@@ -1,446 +1,250 @@
-/* =========================================================
-   DIVINETUBE 6.0 — APP.JS
-   ========================================================= */
-
-'use strict';
-
-/* =========================================================
+/* =========================================
    SUPABASE
-   ========================================================= */
+========================================= */
 
 function getSb() {
-  try {
-    if (
-      typeof window === 'undefined' ||
-      !window.DIVINETUBE_CONFIG
-    ) {
-      return null;
-    }
-
-    const cfg = window.DIVINETUBE_CONFIG;
-
-    if (
-      !cfg.SUPABASE_URL ||
-      !cfg.SUPABASE_PUBLISHABLE_KEY
-    ) {
-      return null;
-    }
-
-    if (
-      typeof window.supabase === 'undefined' ||
-      typeof window.supabase.createClient !== 'function'
-    ) {
-      return null;
-    }
-
-    if (!window.__DIVINETUBE_SB) {
-      window.__DIVINETUBE_SB =
-        window.supabase.createClient(
-          cfg.SUPABASE_URL,
-          cfg.SUPABASE_PUBLISHABLE_KEY,
-          {
-            auth: {
-              persistSession: true,
-              autoRefreshToken: true,
-              detectSessionInUrl: true
-            }
-          }
-        );
-    }
-
-    return window.__DIVINETUBE_SB;
-
-  } catch (error) {
-    console.error('Supabase initialization error:', error);
-    return null;
+  if (
+    !window.supabaseClient &&
+    window.supabase &&
+    window.DIVINETUBE_CONFIG?.SUPABASE_URL &&
+    window.DIVINETUBE_CONFIG?.SUPABASE_PUBLISHABLE_KEY
+  ) {
+    window.supabaseClient = window.supabase.createClient(
+      window.DIVINETUBE_CONFIG.SUPABASE_URL,
+      window.DIVINETUBE_CONFIG.SUPABASE_PUBLISHABLE_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      }
+    );
   }
+
+  return window.supabaseClient;
 }
 
-
-/* =========================================================
+/* =========================================
    HELPERS
-   ========================================================= */
+========================================= */
 
-function $(selector) {
-  return document.querySelector(selector);
-}
+const $ = s => document.querySelector(s);
 
+const esc = s =>
+  String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[c]));
 
-function esc(value) {
-  if (value === null || value === undefined) {
-    return '';
-  }
+const fmt = n =>
+  Number(n || 0).toLocaleString();
 
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+const date = n => {
+  if (!n) return '';
 
-
-function fmt(number) {
-  const n = Number(number || 0);
-
-  if (n >= 1000000000) {
-    return (n / 1000000000).toFixed(1) + 'B';
-  }
-
-  if (n >= 1000000) {
-    return (n / 1000000).toFixed(1) + 'M';
-  }
-
-  if (n >= 1000) {
-    return (n / 1000).toFixed(1) + 'K';
-  }
-
-  return String(n);
-}
-
-
-function date(value) {
-  if (!value) {
-    return '';
-  }
-
-  const d = new Date(value);
+  const d = new Date(n);
 
   if (Number.isNaN(d.getTime())) {
     return '';
   }
 
-  return d.toLocaleDateString(
-    undefined,
-    {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    }
-  );
+  return d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
+function formatYouTubeCount(n) {
+  return Number(n || 0).toLocaleString();
 }
 
-
-function formatYouTubeCount(value) {
-  const n = Number(value || 0);
-
-  if (n >= 1000000000) {
-    return (n / 1000000000).toFixed(1) + 'B';
-  }
-
-  if (n >= 1000000) {
-    return (n / 1000000).toFixed(1) + 'M';
-  }
-
-  if (n >= 1000) {
-    return (n / 1000).toFixed(1) + 'K';
-  }
-
-  return String(n);
-}
-
-
-/* =========================================================
+/* =========================================
    CURRENT USER
-   ========================================================= */
+========================================= */
 
 async function currentUser() {
   const s = getSb();
 
-  if (!s) {
-    return null;
-  }
+  if (!s) return null;
 
   try {
-    const {
-      data,
-      error
-    } = await s.auth.getUser();
-
-    if (error) {
-      return null;
-    }
-
-    return data?.user || null;
-
-  } catch (error) {
-    console.error('Current user error:', error);
+    return (await s.auth.getUser()).data.user;
+  } catch {
     return null;
   }
 }
 
-
-function initials(user) {
-  if (!user) {
-    return '?';
-  }
-
-  const username =
-    user.user_metadata?.username ||
-    user.email?.split('@')[0] ||
-    'U';
-
-  const parts =
-    String(username)
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-
-  if (parts.length >= 2) {
-    return (
-      parts[0][0] +
-      parts[1][0]
-    ).toUpperCase();
-  }
-
-  return username
-    .slice(0, 2)
+function initials(u) {
+  return (
+    u?.user_metadata?.username ||
+    u?.email?.split('@')[0] ||
+    'D'
+  )
+    .slice(0, 1)
     .toUpperCase();
 }
 
-
-/* =========================================================
+/* =========================================
    THEME
-   ========================================================= */
+========================================= */
 
 function toggleTheme() {
   document.body.classList.toggle('light');
 
-  if (
+  localStorage.dt_theme =
     document.body.classList.contains('light')
-  ) {
-    localStorage.dt_theme = 'light';
-  } else {
-    localStorage.removeItem('dt_theme');
-  }
+      ? 'light'
+      : 'dark';
 }
 
-
-/* =========================================================
+/* =========================================
    TOAST
-   ========================================================= */
+========================================= */
 
 function toast(message) {
-  let el = $('#toast');
+  const t = $('#toast');
 
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'toast';
+  if (!t) return;
 
-    Object.assign(
-      el.style,
-      {
-        position: 'fixed',
-        left: '50%',
-        bottom: '24px',
-        transform: 'translateX(-50%)',
-        zIndex: '99999',
-        padding: '12px 18px',
-        borderRadius: '12px',
-        background: '#111827',
-        color: '#fff',
-        fontSize: '14px',
-        boxShadow:
-          '0 10px 30px rgba(0,0,0,.25)',
-        maxWidth: '90vw',
-        textAlign: 'center'
-      }
-    );
+  t.textContent = message;
+  t.classList.add('show');
 
-    document.body.appendChild(el);
-  }
-
-  el.textContent = message;
-  el.style.display = 'block';
-
-  clearTimeout(
-    window.__dtToastTimer
-  );
-
-  window.__dtToastTimer =
-    setTimeout(() => {
-      el.style.display = 'none';
-    }, 3000);
+  setTimeout(() => {
+    t.classList.remove('show');
+  }, 3500);
 }
 
-
-/* =========================================================
+/* =========================================
    AVATAR
-   ========================================================= */
+========================================= */
 
-function avatar(user, size = 40) {
-  if (!user) {
-    return `
-      <div
-        class="avatar"
-        style="
-          width:${size}px;
-          height:${size}px;
-        "
-      >
-        ?
-      </div>
-    `;
-  }
-
-  const avatarUrl =
-    user.user_metadata?.avatar_url ||
-    user.user_metadata?.avatar ||
-    '';
-
-  if (avatarUrl) {
-    return `
-      <img
-        class="avatar"
-        src="${esc(avatarUrl)}"
-        alt=""
-        style="
-          width:${size}px;
-          height:${size}px;
-        "
-      >
-    `;
-  }
-
+function avatar(n = 'D') {
   return `
-    <div
-      class="avatar"
-      style="
-        width:${size}px;
-        height:${size}px;
-      "
-    >
-      ${esc(initials(user))}
+    <div class="mini">
+      ${esc(n[0]?.toUpperCase() || 'D')}
     </div>
   `;
 }
 
-
-/* =========================================================
+/* =========================================
    LOADING
-   ========================================================= */
+========================================= */
 
-function loading(message = 'Loading…') {
-  return `
-    <div class="loading">
-      <div class="spinner"></div>
-      <span>${esc(message)}</span>
+function loading(e) {
+  if (!e) return;
+
+  e.innerHTML = `
+    <div class="skeletonGrid">
+      ${Array.from(
+        { length: 8 },
+        () => '<div class="skeleton"></div>'
+      ).join('')}
     </div>
   `;
 }
 
-
-/* =========================================================
-   LOCAL VIDEO CARD
-   ========================================================= */
+/* =========================================
+   LOCAL DIVINETUBE CARD
+========================================= */
 
 function card(v) {
-  const username =
+  const n =
     v.profiles?.username ||
-    v.username ||
-    'DivineTube';
-
-  const thumbnail =
-    v.thumbnail_url ||
-    'assets/default-thumbnail.jpg';
+    'Creator';
 
   return `
-    <article
-      class="videoCard"
-      data-video-id="${esc(v.id)}"
-    >
-      <a
-        href="watch.html?id=${encodeURIComponent(v.id)}"
-        class="videoThumb"
-      >
-        <img
-          src="${esc(thumbnail)}"
-          alt="${esc(v.title || 'Video')}"
-          loading="lazy"
-          onerror="
-            this.onerror=null;
-            this.src='assets/default-thumbnail.jpg';
-          "
-        >
+    <article class="card">
 
-        ${
-          v.duration
-            ? `
-              <span class="duration">
-                ${esc(v.duration)}
-              </span>
-            `
-            : ''
-        }
-      </a>
+      <a href="watch.html?id=${encodeURIComponent(v.id)}">
 
-      <div class="videoInfo">
-        <div class="videoAvatar">
+        <div class="thumb">
+
           ${
-            v.profiles?.avatar_url
+            v.thumbnail_url
               ? `
                 <img
-                  src="${esc(v.profiles.avatar_url)}"
-                  alt=""
+                  loading="lazy"
+                  src="${esc(v.thumbnail_url)}"
+                  alt="${esc(v.title)}"
                 >
               `
               : `
-                <div class="avatar">
-                  ${esc(
-                    String(username)
-                      .slice(0, 2)
-                      .toUpperCase()
-                  )}
+                <div class="thumbFallback">
+                  ▶
                 </div>
               `
           }
+
+          ${
+            v.duration
+              ? `
+                <span class="duration">
+                  ${esc(v.duration)}
+                </span>
+              `
+              : ''
+          }
+
         </div>
 
-        <div class="videoText">
-          <a
-            href="watch.html?id=${encodeURIComponent(v.id)}"
-            class="videoTitle"
-          >
-            ${esc(v.title || 'Untitled video')}
-          </a>
+        <div class="meta">
 
-          <div class="channelName">
-            ${esc(username)}
+          ${avatar(n)}
+
+          <div>
+
+            <div class="title">
+              ${esc(v.title)}
+            </div>
+
+            <div class="muted">
+              ${esc(n)}
+            </div>
+
+            <div class="muted">
+              ${fmt(v.views)} views
+              ${v.created_at ? ` • ${date(v.created_at)}` : ''}
+            </div>
+
           </div>
 
-          <div class="videoMeta">
-            ${fmt(v.views || 0)} views
-            ${
-              v.created_at
-                ? ` • ${esc(date(v.created_at))}`
-                : ''
-            }
-          </div>
         </div>
-      </div>
+
+      </a>
+
     </article>
   `;
 }
 
-
-/* =========================================================
+/* =========================================
    YOUTUBE CARD
-   ========================================================= */
+========================================= */
 
 function youtubeCard(v) {
-  const snippet = v.snippet || {};
-  const stats = v.statistics || {};
-
   const id =
-    typeof v.id === 'string'
-      ? v.id
-      : v.id?.videoId;
+    v.id?.videoId ||
+    v.id;
+
+  const snippet =
+    v.snippet || {};
+
+  const statistics =
+    v.statistics || {};
+
+  if (!id) return '';
 
   const title =
-    snippet.title || 'YouTube video';
+    snippet.title ||
+    'YouTube video';
 
   const channel =
-    snippet.channelTitle || '';
+    snippet.channelTitle ||
+    'YouTube';
 
   const thumb =
     snippet.thumbnails?.high?.url ||
@@ -449,242 +253,258 @@ function youtubeCard(v) {
     '';
 
   const views =
-    stats.viewCount || 0;
+    statistics.viewCount
+      ? `${formatYouTubeCount(statistics.viewCount)} views`
+      : 'YouTube';
+
+  const published =
+    snippet.publishedAt
+      ? date(snippet.publishedAt)
+      : '';
 
   return `
-    <article class="videoCard youtubeCard">
+    <article class="card youtube-card">
 
-      <a
-        class="videoThumb"
-        href="watch.html?yt=${encodeURIComponent(id)}"
-      >
-        <img
-          src="${esc(thumb)}"
-          alt="${esc(title)}"
-          loading="lazy"
-        >
-      </a>
+      <a href="watch.html?youtube=${encodeURIComponent(id)}">
 
-      <div class="videoInfo">
+        <div class="thumb">
 
-        <div class="videoAvatar">
-          <div class="avatar">
-            YT
-          </div>
+          ${
+            thumb
+              ? `
+                <img
+                  loading="lazy"
+                  src="${esc(thumb)}"
+                  alt="${esc(title)}"
+                >
+              `
+              : `
+                <div class="thumbFallback">
+                  ▶
+                </div>
+              `
+          }
+
+          <span class="duration youtubeBadge">
+            YouTube
+          </span>
+
         </div>
 
-        <div class="videoText">
+        <div class="meta">
 
-          <a
-            class="videoTitle"
-            href="watch.html?yt=${encodeURIComponent(id)}"
+          <div
+            class="mini"
+            aria-hidden="true"
           >
-            ${esc(title)}
-          </a>
-
-          <div class="channelName">
-            ${esc(channel)}
+            Y
           </div>
 
-          <div class="videoMeta">
-            ${formatYouTubeCount(views)} views
+          <div>
+
+            <div class="title">
+              ${esc(title)}
+            </div>
+
+            <div class="muted">
+              ${esc(channel)}
+            </div>
+
+            <div class="muted">
+              ${views}
+              ${published ? ` • ${published}` : ''}
+            </div>
+
           </div>
 
         </div>
 
-      </div>
+      </a>
 
     </article>
   `;
 }
 
-
-/* =========================================================
+/* =========================================
    YOUTUBE API
-   ========================================================= */
+========================================= */
 
 function getYouTubeKey() {
   return (
     window.DIVINETUBE_CONFIG?.YOUTUBE_API_KEY ||
-    window.YOUTUBE_API_KEY ||
     ''
-  );
+  ).trim();
 }
-
 
 async function youtubeRequest(
   endpoint,
   params = {}
 ) {
-  const key = getYouTubeKey();
+  const key =
+    getYouTubeKey();
 
   if (!key) {
-    return {
-      error: 'YouTube API key not configured.',
-      data: null
-    };
+    throw new Error(
+      'YouTube API key is missing from js/config.js.'
+    );
   }
 
-  const query =
-    new URLSearchParams({
-      ...params,
-      key
-    });
+  const url =
+    new URL(
+      `https://www.googleapis.com/youtube/v3/${endpoint}`
+    );
+
+  Object.entries({
+    ...params,
+    key
+  }).forEach(([k, v]) => {
+    if (
+      v !== undefined &&
+      v !== null &&
+      v !== ''
+    ) {
+      url.searchParams.set(
+        k,
+        v
+      );
+    }
+  });
+
+  let response;
 
   try {
-    const response =
+    response =
       await fetch(
-        `https://www.googleapis.com/youtube/v3/${endpoint}?${query}`
+        url.toString()
       );
-
-    const data =
-      await response.json();
-
-    if (!response.ok) {
-      return {
-        error:
-          data?.error?.message ||
-          'YouTube request failed.',
-        data: null
-      };
-    }
-
-    return {
-      error: null,
-      data
-    };
-
   } catch (error) {
-    return {
-      error:
-        error.message ||
-        'Could not connect to YouTube.',
-      data: null
-    };
+    throw new Error(
+      'Could not connect to YouTube. Check your internet connection.'
+    );
   }
+
+  let data;
+
+  try {
+    data =
+      await response.json();
+  } catch {
+    throw new Error(
+      `YouTube returned an invalid response (${response.status}).`
+    );
+  }
+
+  if (!response.ok) {
+    const reason =
+      data?.error?.errors?.[0]?.reason;
+
+    const message =
+      data?.error?.message ||
+      `YouTube request failed (${response.status}).`;
+
+    throw new Error(
+      reason
+        ? `${message} [${reason}]`
+        : message
+    );
+  }
+
+  return data;
 }
 
+/* =========================================
+   YOUTUBE MOST POPULAR
+========================================= */
 
 async function loadYouTubePopular(
-  container,
+  limit = 12,
   category = ''
 ) {
-  if (!container) {
-    return;
-  }
-
-  const key = getYouTubeKey();
-
-  if (!key) {
-    return;
-  }
-
-  const params = {
-    part: 'snippet,statistics',
-    chart: 'mostPopular',
-    maxResults: '12',
-    regionCode: 'NG'
-  };
-
   if (category) {
-    params.videoCategoryId = category;
+    return await loadYouTubeSearch(
+      category,
+      limit
+    );
   }
 
-  const result =
+  const data =
     await youtubeRequest(
       'videos',
-      params
-    );
-
-  if (result.error) {
-    console.warn(
-      'YouTube:',
-      result.error
-    );
-    return;
-  }
-
-  const items =
-    result.data?.items || [];
-
-  if (!items.length) {
-    return;
-  }
-
-  container.insertAdjacentHTML(
-    'beforeend',
-    items.map(youtubeCard).join('')
-  );
-}
-
-
-async function loadYouTubeSearch(
-  container,
-  query
-) {
-  if (!container || !query) {
-    return;
-  }
-
-  const result =
-    await youtubeRequest(
-      'search',
       {
-        part: 'snippet',
-        q: query,
-        type: 'video',
-        maxResults: '12'
+        part:
+          'snippet,statistics,contentDetails',
+
+        chart:
+          'mostPopular',
+
+        regionCode:
+          'NG',
+
+        maxResults:
+          Math.min(
+            Math.max(
+              Number(limit) || 12,
+              1
+            ),
+            50
+          )
       }
     );
 
-  if (result.error) {
-    console.warn(
-      'YouTube search:',
-      result.error
-    );
-    return;
-  }
-
-  const items =
-    result.data?.items || [];
-
-  if (!items.length) {
-    return;
-  }
-
-  const ids =
-    items
-      .map(x => x.id?.videoId)
-      .filter(Boolean);
-
-  let fullItems = items;
-
-  if (ids.length) {
-    const details =
-      await youtubeRequest(
-        'videos',
-        {
-          part: 'snippet,statistics',
-          id: ids.join(',')
-        }
-      );
-
-    if (!details.error) {
-      fullItems =
-        details.data?.items || items;
-    }
-  }
-
-  container.insertAdjacentHTML(
-    'beforeend',
-    fullItems.map(youtubeCard).join('')
-  );
+  return data.items || [];
 }
 
+/* =========================================
+   YOUTUBE SEARCH
+========================================= */
 
-/* =========================================================
+async function loadYouTubeSearch(
+  query,
+  limit = 12
+) {
+  if (!query) {
+    return [];
+  }
+
+  const data =
+    await youtubeRequest(
+      'search',
+      {
+        part:
+          'snippet',
+
+        q:
+          query,
+
+        type:
+          'video',
+
+        videoEmbeddable:
+          'true',
+
+        regionCode:
+          'NG',
+
+        relevanceLanguage:
+          'en',
+
+        maxResults:
+          Math.min(
+            Math.max(
+              Number(limit) || 12,
+              1
+            ),
+            50
+          )
+      }
+    );
+
+  return data.items || [];
+}
+
+/* =========================================
    HEADER
-   ========================================================= */
+========================================= */
 
 async function header() {
   const s = getSb();
@@ -694,7 +514,6 @@ async function header() {
   const authLinkEl = $('#authLink');
 
   if (u) {
-
     if (avatarEl) {
       avatarEl.textContent = initials(u);
       avatarEl.style.display = 'grid';
@@ -704,112 +523,78 @@ async function header() {
       authLinkEl.textContent = 'Sign out';
       authLinkEl.href = '#';
 
-      authLinkEl.onclick =
-        async e => {
-          e.preventDefault();
+      authLinkEl.onclick = async e => {
+        e.preventDefault();
 
-          if (!s) {
-            toast(
-              'Authentication is not available.'
-            );
-            return;
-          }
+        if (!s) {
+          toast('Authentication is not available.');
+          return;
+        }
 
-          authLinkEl.textContent =
-            'Signing out…';
+        authLinkEl.textContent = 'Signing out…';
+        authLinkEl.style.pointerEvents = 'none';
 
-          authLinkEl.style.pointerEvents =
-            'none';
+        try {
+          const { error } = await s.auth.signOut();
 
-          try {
-            const {
-              error
-            } =
-              await s.auth.signOut();
-
-            if (error) {
-              console.error(
-                'Sign out error:',
-                error
-              );
-
-              authLinkEl.textContent =
-                'Sign out';
-
-              authLinkEl.style.pointerEvents =
-                '';
-
-              toast(
-                error.message ||
-                'Could not sign out.'
-              );
-
-              return;
-            }
-
-            if (avatarEl) {
-              avatarEl.style.display =
-                'none';
-            }
-
-            authLinkEl.textContent =
-              'Sign in';
-
-            authLinkEl.href =
-              'auth.html';
-
-            authLinkEl.onclick =
-              null;
-
-            authLinkEl.style.pointerEvents =
-              '';
-
-            toast(
-              'You have been signed out.'
-            );
-
-            setTimeout(() => {
-              location.href =
-                'index.html';
-            }, 500);
-
-          } catch (error) {
+          if (error) {
             console.error(
               'Sign out error:',
               error
             );
 
-            authLinkEl.textContent =
-              'Sign out';
-
-            authLinkEl.style.pointerEvents =
-              '';
+            authLinkEl.textContent = 'Sign out';
+            authLinkEl.style.pointerEvents = '';
 
             toast(
-              'Something went wrong while signing out.'
+              error.message ||
+              'Could not sign out.'
             );
+
+            return;
           }
-        };
+
+          if (avatarEl) {
+            avatarEl.style.display = 'none';
+          }
+
+          authLinkEl.textContent = 'Sign in';
+          authLinkEl.href = 'auth.html';
+          authLinkEl.onclick = null;
+          authLinkEl.style.pointerEvents = '';
+
+          toast('You have been signed out.');
+
+          setTimeout(() => {
+            location.href = 'index.html';
+          }, 500);
+
+        } catch (error) {
+          console.error(
+            'Sign out error:',
+            error
+          );
+
+          authLinkEl.textContent = 'Sign out';
+          authLinkEl.style.pointerEvents = '';
+
+          toast(
+            'Something went wrong while signing out.'
+          );
+        }
+      };
     }
 
   } else {
-
     if (avatarEl) {
       avatarEl.style.display = 'none';
     }
 
     if (authLinkEl) {
-      authLinkEl.textContent =
-        'Sign in';
-
-      authLinkEl.href =
-        'auth.html';
-
-      authLinkEl.onclick =
-        null;
-
-      authLinkEl.style.pointerEvents =
-        '';
+      authLinkEl.textContent = 'Sign in';
+      authLinkEl.href = 'auth.html';
+      authLinkEl.onclick = null;
+      authLinkEl.style.pointerEvents = '';
     }
   }
 
@@ -819,266 +604,343 @@ async function header() {
     document.body.classList.add('light');
   }
 }
+/* =========================================
+   YOUTUBE ERROR DISPLAY
+========================================= */
 
+function youtubeErrorHtml(error) {
+  const message =
+    error?.message ||
+    'Unknown YouTube error.';
 
-/* =========================================================
-   YOUTUBE ERROR
-   ========================================================= */
-
-function youtubeErrorHtml(message) {
   return `
     <div class="notice">
+      <strong>YouTube could not load.</strong>
+      <br><br>
       ${esc(message)}
     </div>
   `;
 }
 
-
-/* =========================================================
-   LOAD VIDEOS
-   ========================================================= */
+/* =========================================
+   LOAD LOCAL + YOUTUBE
+========================================= */
 
 async function loadVideos(
-  container,
-  options = {}
+  target = '#videoGrid',
+  query = '',
+  limit = 40,
+  category = ''
 ) {
-  if (!container) {
-    return;
-  }
+  const s =
+    getSb();
 
-  const s = getSb();
+  const e =
+    $(target);
 
-  const {
-    title = '',
-    category = '',
-    youtube = true
-  } = options;
+  if (!e) return;
 
-  container.innerHTML =
-    loading('Loading videos…');
+  loading(e);
 
-  let localItems = [];
+  let localVideos = [];
+
+  /* =========================
+     LOCAL DIVINETUBE VIDEOS
+  ========================= */
 
   if (s) {
-    try {
-      let query =
-        s
-          .from('videos')
-          .select(
-            `
-              *,
-              profiles(username,avatar_url)
-            `
-          )
-          .order(
-            'created_at',
-            {
-              ascending: false
-            }
-          )
-          .limit(30);
+    let q =
+      s
+        .from('videos')
+        .select(
+          '*,profiles(username)'
+        )
+        .order(
+          'created_at',
+          {
+            ascending: false
+          }
+        )
+        .limit(limit);
 
-      if (title) {
-        query =
-          query.ilike(
-            'title',
-            `%${title}%`
-          );
-      }
-
-      if (category) {
-        query =
-          query.eq(
-            'category',
-            category
-          );
-      }
-
-      const {
-        data,
-        error
-      } = await query;
-
-      if (error) {
-        console.error(
-          'Load videos error:',
-          error
+    if (query) {
+      q =
+        q.ilike(
+          'title',
+          `%${query}%`
         );
-      } else {
-        localItems =
-          data || [];
-      }
+    }
 
-    } catch (error) {
+    if (category) {
+      q =
+        q.eq(
+          'category',
+          category
+        );
+    }
+
+    const {
+      data,
+      error
+    } =
+      await q;
+
+    if (error) {
       console.error(
-        'Load local videos error:',
+        'DivineTube database error:',
         error
       );
+    } else {
+      localVideos =
+        data || [];
     }
   }
 
-  container.innerHTML = '';
+  /* =========================
+     YOUTUBE
+  ========================= */
 
-  if (localItems.length) {
-    container.insertAdjacentHTML(
-      'beforeend',
-      localItems.map(card).join('')
+  let youtubeVideos = [];
+  let youtubeError = null;
+
+  try {
+    if (query) {
+      youtubeVideos =
+        await loadYouTubeSearch(
+          query,
+          Math.min(
+            12,
+            limit
+          )
+        );
+    } else {
+      youtubeVideos =
+        await loadYouTubePopular(
+          Math.min(
+            12,
+            limit
+          ),
+          category
+        );
+    }
+  } catch (error) {
+    youtubeError =
+      error;
+
+    console.error(
+      'YouTube loading error:',
+      error
     );
   }
 
+  const localHtml =
+    localVideos
+      .map(card)
+      .join('');
+
+  const youtubeHtml =
+    youtubeVideos
+      .map(youtubeCard)
+      .join('');
+
+  const errorHtml =
+    youtubeError
+      ? youtubeErrorHtml(
+          youtubeError
+        )
+      : '';
+
   if (
-    !localItems.length &&
-    !youtube
+    !localHtml &&
+    !youtubeHtml &&
+    !errorHtml
   ) {
-    container.innerHTML =
-      `
-        <div class="notice">
-          No videos found.
-        </div>
-      `;
+    e.innerHTML = `
+      <div class="notice">
+        No videos found.
+      </div>
+    `;
+
+    return;
   }
 
-  if (youtube) {
-    if (title) {
-      await loadYouTubeSearch(
-        container,
-        title
-      );
-    } else {
-      await loadYouTubePopular(
-        container
-      );
-    }
-  }
-
-  if (!container.children.length) {
-    container.innerHTML =
-      `
-        <div class="notice">
-          No videos found.
-        </div>
-      `;
-  }
+  e.innerHTML =
+    localHtml +
+    youtubeHtml +
+    errorHtml;
 }
 
-
-/* =========================================================
-   AUTH PAGE
-   ========================================================= */
+/* =========================================
+   AUTH
+========================================= */
 
 async function authPage() {
-  const f = $('#authForm');
+  const s =
+    getSb();
 
-  if (!f) {
+  const f =
+    $('#authForm');
+
+  if (!f || !s)
     return;
-  }
 
-  const s = getSb();
+  f.onsubmit =
+    async e => {
+      e.preventDefault();
 
-  if (!s) {
-    const msg = $('#msg');
+      const signup =
+        window.isSignup === true;
 
-    if (msg) {
-      msg.textContent =
-        'Supabase is not configured.';
-    }
+      const email =
+        $('#email')
+          ?.value
+          .trim();
 
-    return;
-  }
+      const password =
+        $('#password')
+          ?.value || '';
 
-  const username =
-    $('#username');
+      const user =
+        $('#username')
+          ?.value
+          .trim() || '';
 
-  const email =
-    $('#email');
+      const msg =
+        $('#msg');
 
-  const password =
-    $('#password');
+      const submit =
+        $('#authSubmit');
 
-  const msg =
-    $('#msg');
+      if (
+        !email ||
+        !password
+      ) {
+        if (msg) {
+          msg.textContent =
+            'Please enter your email and password.';
+        }
 
-  const submit =
-    $('#authSubmit');
+        return;
+      }
 
-  const forgot =
-    $('#forgotPassword');
+      if (
+        signup &&
+        !user
+      ) {
+        if (msg) {
+          msg.textContent =
+            'Please choose a username.';
+        }
 
-  let isSignup =
-    window.isSignup !== false;
+        return;
+      }
 
-  function updateMode() {
+      if (msg) {
+        msg.textContent =
+          signup
+            ? 'Creating your account…'
+            : 'Logging you in…';
+      }
 
-    if (username) {
-      username.closest('.field')?.classList.toggle(
-        'hidden',
-        !isSignup
-      );
+      if (submit) {
+        submit.disabled =
+          true;
 
-      username.style.display =
-        isSignup
-          ? ''
-          : 'none';
-    }
+        submit.textContent =
+          signup
+            ? 'Creating account…'
+            : 'Logging in…';
+      }
 
-    if (forgot) {
-      forgot.style.display =
-        isSignup
-          ? 'none'
-          : '';
-    }
+      try {
+        let r;
 
-    if (submit) {
-      submit.textContent =
-        isSignup
-          ? 'Create account'
-          : 'Sign in';
-    }
+        if (signup) {
+          r =
+            await s.auth.signUp({
+              email,
+              password,
+              options: {
+                data: {
+                  username:
+                    user
+                }
+              }
+            });
+        } else {
+          r =
+            await s.auth.signInWithPassword({
+              email,
+              password
+            });
+        }
 
-    const switchBtn =
-      $('#switchAuth');
+        if (r.error) {
+          if (msg) {
+            msg.textContent =
+              r.error.message;
+          }
 
-    if (switchBtn) {
-      switchBtn.textContent =
-        isSignup
-          ? 'Already have an account? Sign in'
-          : "Don't have an account? Sign up";
-    }
-  }
+          return;
+        }
 
-  updateMode();
+        if (
+          signup &&
+          !r.data.session
+        ) {
+          if (msg) {
+            msg.textContent =
+              'Account created! Check your email to verify your account.';
+          }
 
-  const switchAuth =
-    $('#switchAuth');
-
-  if (switchAuth) {
-    switchAuth.onclick =
-      e => {
-        e.preventDefault();
-
-        isSignup =
-          !isSignup;
-
-        window.isSignup =
-          isSignup;
-
-        updateMode();
+          return;
+        }
 
         if (msg) {
-          msg.textContent = '';
+          msg.textContent =
+            'Login successful!';
         }
-      };
-  }
 
-  if (forgot) {
-    forgot.onclick =
-      async e => {
-        e.preventDefault();
+        setTimeout(
+          () => {
+            location.href =
+              'index.html';
+          },
+          500
+        );
+      } catch (error) {
+        console.error(error);
 
-        const value =
-          email?.value.trim();
+        if (msg) {
+          msg.textContent =
+            'Something went wrong. Please try again.';
+        }
+      } finally {
+        if (submit) {
+          submit.disabled =
+            false;
 
-        if (!value) {
+          submit.textContent =
+            signup
+              ? 'Create account'
+              : 'Log in';
+        }
+      }
+    };
+
+  $('#forgotPassword')
+    ?.addEventListener(
+      'click',
+      async () => {
+        const email =
+          $('#email')
+            ?.value
+            .trim();
+
+        const msg =
+          $('#msg');
+
+        if (!email) {
           if (msg) {
             msg.textContent =
               'Enter your email first.';
@@ -1087,312 +949,134 @@ async function authPage() {
           return;
         }
 
-        try {
-          const {
-            error
-          } =
-            await s.auth.resetPasswordForEmail(
-              value,
+        if (msg) {
+          msg.textContent =
+            'Sending password reset email…';
+        }
+
+        const {
+          error
+        } =
+          await s.auth
+            .resetPasswordForEmail(
+              email,
               {
                 redirectTo:
-                  `${location.origin}${location.pathname.replace(
-                    /[^/]*$/,
-                    ''
-                  )}update-password.html`
+                  `${location.origin}/update-password.html`
               }
             );
 
-          if (error) {
-            if (msg) {
-              msg.textContent =
-                error.message;
-            }
-
-            return;
-          }
-
+        if (error) {
           if (msg) {
             msg.textContent =
-              'Password reset email sent. Check your inbox.';
+              error.message;
           }
 
-        } catch (error) {
-          if (msg) {
-            msg.textContent =
-              error.message ||
-              'Could not send reset email.';
-          }
+          return;
         }
-      };
-  }
-
-  f.onsubmit =
-    async e => {
-      e.preventDefault();
-
-      const em =
-        email?.value.trim();
-
-      const pw =
-        password?.value || '';
-
-      const un =
-        username?.value.trim();
-
-      if (!em || !pw) {
-        if (msg) {
-          msg.textContent =
-            'Email and password are required.';
-        }
-
-        return;
-      }
-
-      if (
-        isSignup &&
-        !un
-      ) {
-        if (msg) {
-          msg.textContent =
-            'Username is required.';
-        }
-
-        return;
-      }
-
-      if (submit) {
-        submit.disabled = true;
-        submit.textContent =
-          isSignup
-            ? 'Creating account…'
-            : 'Signing in…';
-      }
-
-      try {
-
-        if (isSignup) {
-
-          const {
-            data,
-            error
-          } =
-            await s.auth.signUp({
-              email: em,
-              password: pw,
-              options: {
-                data: {
-                  username: un
-                }
-              }
-            });
-
-          if (error) {
-            throw error;
-          }
-
-          if (
-            data?.session
-          ) {
-            if (msg) {
-              msg.textContent =
-                'Account created successfully!';
-            }
-
-            setTimeout(() => {
-              location.href =
-                'index.html';
-            }, 700);
-
-          } else {
-            if (msg) {
-              msg.textContent =
-                'Account created! Check your email to verify your account.';
-            }
-          }
-
-        } else {
-
-          const {
-            data,
-            error
-          } =
-            await s.auth.signInWithPassword({
-              email: em,
-              password: pw
-            });
-
-          if (error) {
-            throw error;
-          }
-
-          if (!data?.user) {
-            throw new Error(
-              'Sign in failed.'
-            );
-          }
-
-          if (msg) {
-            msg.textContent =
-              'Signed in successfully!';
-          }
-
-          setTimeout(() => {
-            location.href =
-              'index.html';
-          }, 500);
-        }
-
-      } catch (error) {
-        console.error(
-          'Auth error:',
-          error
-        );
 
         if (msg) {
           msg.textContent =
-            error.message ||
-            'Authentication failed.';
-        }
-
-      } finally {
-
-        if (submit) {
-          submit.disabled = false;
-
-          submit.textContent =
-            isSignup
-              ? 'Create account'
-              : 'Sign in';
+            'Check your email for the password reset link.';
         }
       }
-    };
+    );
 }
 
-
-/* =========================================================
-   VIDEO THUMBNAIL
-   ========================================================= */
+/* =========================================
+   CREATE THUMBNAIL
+========================================= */
 
 function extractVideoFrame(file) {
   return new Promise(
-    (resolve, reject) => {
-
-      if (!file) {
-        reject(
-          new Error(
-            'No video selected.'
-          )
-        );
-
-        return;
-      }
-
+    resolve => {
       const video =
-        document.createElement('video');
+        document.createElement(
+          'video'
+        );
 
       const url =
         URL.createObjectURL(file);
 
-      video.src = url;
-      video.muted = true;
-      video.playsInline = true;
-      video.preload = 'metadata';
+      video.preload =
+        'metadata';
 
-      let done = false;
+      video.muted =
+        true;
 
-      function cleanup() {
-        URL.revokeObjectURL(url);
+      video.playsInline =
+        true;
 
-        video.removeAttribute('src');
+      video.src =
+        url;
 
-        try {
-          video.load();
-        } catch (_) {}
-      }
+      let finished =
+        false;
 
-      function fail(error) {
-        if (done) {
+      function finish(result) {
+        if (finished)
           return;
-        }
 
-        done = true;
-        cleanup();
-        reject(error);
+        finished =
+          true;
+
+        URL.revokeObjectURL(
+          url
+        );
+
+        video.removeAttribute(
+          'src'
+        );
+
+        video.load();
+
+        resolve(result);
       }
-
-      video.onerror =
-        () => {
-          fail(
-            new Error(
-              'Could not read the video to create a thumbnail.'
-            )
-          );
-        };
 
       video.onloadedmetadata =
         () => {
-          const duration =
-            Number(video.duration);
-
-          let target =
-            Number.isFinite(duration) &&
-            duration > 0
-              ? duration * 0.15
-              : 0;
-
           if (
-            !Number.isFinite(target) ||
-            target < 0
+            !video.duration ||
+            !video.videoWidth ||
+            !video.videoHeight
           ) {
-            target = 0;
+            finish(null);
+            return;
           }
 
-          try {
-            video.currentTime =
-              target;
-          } catch (_) {
-            video.currentTime = 0;
-          }
+          const wantedTime =
+            video.duration *
+            0.15;
+
+          const safeTime =
+            Math.min(
+              Math.max(
+                wantedTime,
+                0.1
+              ),
+              Math.max(
+                video.duration - 0.1,
+                0.1
+              )
+            );
+
+          video.currentTime =
+            safeTime;
         };
 
       video.onseeked =
         () => {
-          if (done) {
-            return;
-          }
-
           try {
-
             const canvas =
               document.createElement(
                 'canvas'
               );
 
-            const width =
-              video.videoWidth ||
-              1280;
-
-            const height =
-              video.videoHeight ||
-              720;
-
-            const maxWidth =
-              1280;
-
-            const scale =
-              width > maxWidth
-                ? maxWidth / width
-                : 1;
-
             canvas.width =
-              Math.round(
-                width * scale
-              );
+              video.videoWidth;
 
             canvas.height =
-              Math.round(
-                height * scale
-              );
+              video.videoHeight;
 
             const ctx =
               canvas.getContext(
@@ -1400,9 +1084,8 @@ function extractVideoFrame(file) {
               );
 
             if (!ctx) {
-              throw new Error(
-                'Canvas is not supported.'
-              );
+              finish(null);
+              return;
             }
 
             ctx.drawImage(
@@ -1414,187 +1097,118 @@ function extractVideoFrame(file) {
             );
 
             canvas.toBlob(
-              blob => {
-
-                if (done) {
-                  return;
-                }
-
-                if (!blob) {
-                  fail(
-                    new Error(
-                      'Could not create thumbnail.'
-                    )
-                  );
-
-                  return;
-                }
-
-                done = true;
-                cleanup();
-
-                resolve(blob);
-
-              },
+              blob =>
+                finish(blob),
               'image/jpeg',
               0.88
             );
-
           } catch (error) {
-            fail(error);
+            console.error(
+              'Thumbnail generation error:',
+              error
+            );
+
+            finish(null);
           }
+        };
+
+      video.onerror =
+        () => {
+          console.error(
+            'Could not read uploaded video.'
+          );
+
+          finish(null);
         };
     }
   );
 }
 
-
-/* =========================================================
+/* =========================================
    VIDEO DURATION
-   ========================================================= */
+========================================= */
 
 function getVideoDuration(file) {
   return new Promise(
-    (resolve, reject) => {
-
-      if (!file) {
-        reject(
-          new Error(
-            'No video selected.'
-          )
-        );
-
-        return;
-      }
-
+    resolve => {
       const video =
-        document.createElement('video');
+        document.createElement(
+          'video'
+        );
 
       const url =
         URL.createObjectURL(file);
 
-      video.src = url;
-      video.preload = 'metadata';
+      video.preload =
+        'metadata';
+
+      video.src =
+        url;
 
       video.onloadedmetadata =
         () => {
-
-          const seconds =
-            Math.round(
-              Number(video.duration) || 0
+          const total =
+            Math.max(
+              0,
+              Math.floor(
+                video.duration
+              )
             );
 
-          URL.revokeObjectURL(url);
-
-          const mins =
+          const min =
             Math.floor(
-              seconds / 60
+              total / 60
             );
 
-          const secs =
-            seconds % 60;
+          const sec =
+            total % 60;
+
+          URL.revokeObjectURL(
+            url
+          );
 
           resolve(
-            `${mins}:${String(secs).padStart(2, '0')}`
+            `${min}:${sec < 10 ? '0' : ''}${sec}`
           );
         };
 
       video.onerror =
         () => {
-          URL.revokeObjectURL(url);
-
-          reject(
-            new Error(
-              'Could not read video duration.'
-            )
+          URL.revokeObjectURL(
+            url
           );
+
+          resolve('');
         };
     }
   );
 }
 
-
-/* =========================================================
-   UPLOAD PROGRESS HELPERS
-   ========================================================= */
-
-function setUploadProgress(percent) {
-  const value =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Number(percent) || 0
-      )
-    );
-
-  const fill =
-    $('#uploadProgressFill') ||
-    $('#progressFill') ||
-    $('.uploadProgressFill');
-
-  const bar =
-    $('#uploadProgress') ||
-    $('#progressBar') ||
-    $('.uploadProgress');
-
-  const text =
-    $('#uploadProgressText') ||
-    $('#progressText');
-
-  if (fill) {
-    fill.style.width =
-      `${value}%`;
-  }
-
-  if (bar) {
-    bar.setAttribute(
-      'aria-valuenow',
-      String(value)
-    );
-  }
-
-  if (text) {
-    text.textContent =
-      `${Math.round(value)}%`;
-  }
-}
-
-
-function setUploadStatus(message) {
-  const status =
-    $('#uploadStatus');
-
-  if (status) {
-    status.textContent =
-      message;
-  }
-}
-
-
-/* =========================================================
-   UPLOAD PAGE
-   ========================================================= */
+/* =========================================
+   UPLOAD
+========================================= */
 
 async function uploadPage() {
-  const s = getSb();
-  const f = $('#uploadForm');
+  const s =
+    getSb();
 
-  if (!f || !s) {
+  const f =
+    $('#uploadForm');
+
+  if (!f || !s)
     return;
-  }
 
   const u =
     await currentUser();
 
   if (!u) {
-
     if ($('#uploadGate')) {
-      $('#uploadGate').innerHTML = `
-        <div class="notice">
-          Please sign in before uploading.
-        </div>
-      `;
+      $('#uploadGate')
+        .innerHTML = `
+          <div class="notice">
+            Please sign in before uploading.
+          </div>
+        `;
     }
 
     f.style.display =
@@ -1609,214 +1223,33 @@ async function uploadPage() {
   const ti =
     $('#thumb');
 
-  const publishButton =
-    f.querySelector(
-      'button[type="submit"]'
-    );
+  ti?.addEventListener(
+    'change',
+    () => {
+      const x =
+        ti.files?.[0];
 
-  /* -------------------------------------------------------
-     VIDEO INPUT
-     ------------------------------------------------------- */
-
-  if (vi) {
-
-    vi.addEventListener(
-      'change',
-      () => {
-
-        const file =
-          vi.files?.[0];
-
-        if (!file) {
-          return;
-        }
-
-        if (
-          !file.type.startsWith('video/')
-        ) {
-          vi.value = '';
-
-          toast(
-            'Please select a video file.'
+      if (
+        x &&
+        $('#preview')
+      ) {
+        $('#preview').src =
+          URL.createObjectURL(
+            x
           );
 
-          return;
-        }
-
-        const previewVideo =
-          $('#videoPreview');
-
-        if (
-          previewVideo &&
-          previewVideo.tagName === 'VIDEO'
-        ) {
-          const oldUrl =
-            previewVideo.dataset.objectUrl;
-
-          if (oldUrl) {
-            URL.revokeObjectURL(
-              oldUrl
-            );
-          }
-
-          const url =
-            URL.createObjectURL(file);
-
-          previewVideo.src =
-            url;
-
-          previewVideo.dataset.objectUrl =
-            url;
-
-          previewVideo.classList.remove(
+        $('#preview')
+          .classList
+          .remove(
             'hidden'
           );
-        }
-
-        const fileName =
-          $('#videoFileName');
-
-        if (fileName) {
-          fileName.textContent =
-            file.name;
-        }
-
-        const fileSize =
-          $('#videoFileSize');
-
-        if (fileSize) {
-          fileSize.textContent =
-            `${(
-              file.size /
-              (1024 * 1024)
-            ).toFixed(1)} MB`;
-        }
-
-        const title =
-          $('#title');
-
-        const previewTitle =
-          $('#previewTitle');
-
-        if (
-          previewTitle &&
-          title
-        ) {
-          previewTitle.textContent =
-            title.value.trim() ||
-            'Your video title';
-        }
       }
-    );
-  }
-
-
-  /* -------------------------------------------------------
-     CUSTOM THUMBNAIL
-     ------------------------------------------------------- */
-
-  if (ti) {
-
-    ti.addEventListener(
-      'change',
-      () => {
-
-        const x =
-          ti.files?.[0];
-
-        if (!x) {
-          return;
-        }
-
-        if (
-          !x.type.startsWith('image/')
-        ) {
-          ti.value = '';
-
-          toast(
-            'Please select an image thumbnail.'
-          );
-
-          return;
-        }
-
-        if ($('#preview')) {
-
-          const oldUrl =
-            $('#preview').dataset.objectUrl;
-
-          if (oldUrl) {
-            URL.revokeObjectURL(
-              oldUrl
-            );
-          }
-
-          const url =
-            URL.createObjectURL(x);
-
-          $('#preview').src =
-            url;
-
-          $('#preview').dataset.objectUrl =
-            url;
-
-          $('#preview').classList.remove(
-            'hidden'
-          );
-        }
-      }
-    );
-  }
-
-
-  /* -------------------------------------------------------
-     TITLE LIVE PREVIEW
-     ------------------------------------------------------- */
-
-  const titleInput =
-    $('#title');
-
-  const previewTitle =
-    $('#previewTitle');
-
-  if (
-    titleInput &&
-    previewTitle
-  ) {
-    titleInput.addEventListener(
-      'input',
-      () => {
-        previewTitle.textContent =
-          titleInput.value.trim() ||
-          'Your video title';
-      }
-    );
-  }
-
-
-  /* -------------------------------------------------------
-     FORM SUBMIT
-     ------------------------------------------------------- */
-
-  if (
-    f.dataset.uploadHandler === 'true'
-  ) {
-    return;
-  }
-
-  f.dataset.uploadHandler =
-    'true';
+    }
+  );
 
   f.onsubmit =
     async e => {
-
       e.preventDefault();
-
-      if (
-        f.dataset.uploading === 'true'
-      ) {
-        return;
-      }
 
       const video =
         vi?.files?.[0];
@@ -1826,188 +1259,69 @@ async function uploadPage() {
         null;
 
       const title =
-        $('#title')?.value.trim() ||
-        '';
+        $('#title')
+          .value
+          .trim();
 
       const desc =
-        $('#desc')?.value.trim() ||
-        '';
+        $('#desc')
+          .value
+          .trim();
 
       const category =
-        $('#category')?.value ||
-        '';
+        $('#category')
+          .value;
 
-      /* -----------------------------------------------------
-         VALIDATION
-         ----------------------------------------------------- */
-
-      if (!video || !title) {
-
+      if (
+        !video ||
+        !title
+      ) {
         $('#msg').textContent =
           'Title and video are required.';
 
         return;
       }
 
-      if (
-        !video.type.startsWith('video/')
-      ) {
-
-        $('#msg').textContent =
-          'Please select a valid video file.';
-
-        return;
-      }
-
-      if (
-        customThumb &&
-        !customThumb.type.startsWith('image/')
-      ) {
-
-        $('#msg').textContent =
-          'Please select a valid image thumbnail.';
-
-        return;
-      }
-
-      /* -----------------------------------------------------
-         START
-         ----------------------------------------------------- */
-
-      f.dataset.uploading =
-        'true';
-
-      if (publishButton) {
-        publishButton.disabled =
-          true;
-
-        publishButton.dataset.originalText =
-          publishButton.textContent;
-
-        publishButton.textContent =
-          'Publishing…';
-      }
-
-      setUploadProgress(0);
-
-      setUploadStatus(
-        'Preparing your video…'
-      );
-
-      $('#msg').textContent =
-        'Preparing upload…';
-
       try {
-
-        /* ---------------------------------------------------
-           THUMBNAIL
-           --------------------------------------------------- */
-
         let thumbBlob =
           customThumb;
 
         if (!thumbBlob) {
-
           $('#msg').textContent =
             'Creating thumbnail from your video…';
 
-          setUploadStatus(
-            'Creating thumbnail…'
-          );
-
-          setUploadProgress(5);
-
-          try {
-
-            thumbBlob =
-              await extractVideoFrame(
-                video
-              );
-
-          } catch (thumbError) {
-
-            console.warn(
-              'Thumbnail generation failed:',
-              thumbError
+          thumbBlob =
+            await extractVideoFrame(
+              video
             );
-
-            /*
-             * Thumbnail generation is optional.
-             * The video can still be published.
-             */
-
-            thumbBlob =
-              null;
-          }
         }
-
-        /* ---------------------------------------------------
-           VIDEO INFORMATION
-           --------------------------------------------------- */
 
         $('#msg').textContent =
           'Reading video information…';
 
-        setUploadStatus(
-          'Reading video information…'
-        );
-
-        setUploadProgress(10);
-
-        let durationStr =
-          '';
-
-        try {
-
-          durationStr =
-            await getVideoDuration(
-              video
-            );
-
-        } catch (durationError) {
-
-          console.warn(
-            'Duration error:',
-            durationError
+        const durationStr =
+          await getVideoDuration(
+            video
           );
-
-          durationStr =
-            '';
-        }
-
-        /* ---------------------------------------------------
-           SAFE FILE NAME
-           --------------------------------------------------- */
-
-        const safe =
-          name =>
-            String(name)
-              .replace(
-                /[^a-zA-Z0-9._-]/g,
-                '_'
-              );
-
-        const videoPath =
-          `${u.id}/${crypto.randomUUID()}-${safe(video.name)}`;
-
-        /* ---------------------------------------------------
-           VIDEO UPLOAD
-           --------------------------------------------------- */
 
         $('#msg').textContent =
           'Uploading video…';
 
-        setUploadStatus(
-          'Uploading video…'
-        );
+        const safe =
+          name =>
+            name.replace(
+              /[^a-zA-Z0-9._-]/g,
+              '_'
+            );
 
-        setUploadProgress(15);
+        const vp =
+          `${u.id}/${crypto.randomUUID()}-${safe(video.name)}`;
 
-        const videoUpload =
+        let r =
           await s.storage
             .from('videos')
             .upload(
-              videoPath,
+              vp,
               video,
               {
                 upsert: false,
@@ -2017,47 +1331,37 @@ async function uploadPage() {
               }
             );
 
-        if (videoUpload.error) {
-          throw videoUpload.error;
-        }
+        if (r.error) {
+          $('#msg').textContent =
+            r.error.message;
 
-        setUploadProgress(70);
+          return;
+        }
 
         const videoUrl =
           s.storage
             .from('videos')
             .getPublicUrl(
-              videoPath
+              vp
             )
             .data
             .publicUrl;
-
-        /* ---------------------------------------------------
-           THUMBNAIL UPLOAD
-           --------------------------------------------------- */
 
         let thumbUrl =
           null;
 
         if (thumbBlob) {
-
           $('#msg').textContent =
             'Uploading video thumbnail…';
 
-          setUploadStatus(
-            'Uploading thumbnail…'
-          );
-
-          setUploadProgress(75);
-
-          const thumbPath =
+          const tp =
             `${u.id}/${crypto.randomUUID()}-thumb.jpg`;
 
-          const thumbUpload =
+          r =
             await s.storage
               .from('thumbnails')
               .upload(
-                thumbPath,
+                tp,
                 thumbBlob,
                 {
                   upsert: false,
@@ -2066,76 +1370,50 @@ async function uploadPage() {
                 }
               );
 
-          if (
-            !thumbUpload.error
-          ) {
-
+          if (!r.error) {
             thumbUrl =
               s.storage
                 .from('thumbnails')
                 .getPublicUrl(
-                  thumbPath
+                  tp
                 )
                 .data
                 .publicUrl;
-
-            setUploadProgress(85);
-
-          } else {
-
-            console.warn(
-              'Thumbnail upload failed:',
-              thumbUpload.error
-            );
-
-            /*
-             * Do not fail the entire video
-             * upload because the thumbnail failed.
-             */
           }
         }
 
-        /* ---------------------------------------------------
-           DATABASE INSERT
-           --------------------------------------------------- */
-
-        $('#msg').textContent =
-          'Publishing your video…';
-
-        setUploadStatus(
-          'Publishing video…'
-        );
-
-        setUploadProgress(90);
-
-        const result =
+        r =
           await s
             .from('videos')
             .insert({
-              owner_id: u.id,
+              owner_id:
+                u.id,
+
               title,
-              description: desc,
+
+              description:
+                desc,
+
               category,
-              video_url: videoUrl,
-              thumbnail_url: thumbUrl,
-              duration: durationStr
+
+              video_url:
+                videoUrl,
+
+              thumbnail_url:
+                thumbUrl,
+
+              duration:
+                durationStr
             })
             .select()
             .single();
 
-        if (result.error) {
-          throw result.error;
+        if (r.error) {
+          $('#msg').textContent =
+            r.error.message;
+
+          return;
         }
-
-        /* ---------------------------------------------------
-           SUCCESS
-           --------------------------------------------------- */
-
-        setUploadProgress(100);
-
-        setUploadStatus(
-          'Published successfully!'
-        );
 
         $('#msg').textContent =
           'Published!';
@@ -2148,305 +1426,273 @@ async function uploadPage() {
           () => {
             location.href =
               'watch.html?id=' +
-              encodeURIComponent(
-                result.data.id
-              );
+              r.data.id;
           },
           700
         );
-
       } catch (error) {
-
         console.error(
           'Upload error:',
           error
         );
 
-        const message =
-          error?.message ||
-          'Upload failed.';
-
         $('#msg').textContent =
-          message;
-
-        setUploadStatus(
-          'Upload failed.'
-        );
-
-        toast(
-          message
-        );
-
-      } finally {
-
-        f.dataset.uploading =
-          'false';
-
-        if (publishButton) {
-          publishButton.disabled =
-            false;
-
-          publishButton.textContent =
-            publishButton.dataset.originalText ||
-            'Publish';
-        }
+          error.message ||
+          'Upload failed.';
       }
     };
 }
 
+/* =========================================
+   YOUTUBE WATCH
+========================================= */
 
-/* =========================================================
-   YOUTUBE WATCH PAGE
-   ========================================================= */
-
-async function youtubeWatchPage(id) {
+async function youtubeWatchPage(
+  youtubeId
+) {
   const player =
     $('#player');
 
-  if (!player || !id) {
+  if (!player)
     return;
-  }
 
-  const result =
-    await youtubeRequest(
-      'videos',
-      {
-        part:
-          'snippet,statistics',
-        id
-      }
-    );
+  player.innerHTML = '';
 
-  if (
-    result.error ||
-    !result.data?.items?.length
-  ) {
-    player.innerHTML =
-      youtubeErrorHtml(
-        result.error ||
-        'YouTube video not found.'
+  try {
+    const data =
+      await youtubeRequest(
+        'videos',
+        {
+          part:
+            'snippet,statistics,contentDetails',
+
+          id:
+            youtubeId
+        }
       );
 
-    return;
-  }
+    const v =
+      data.items?.[0];
 
-  const video =
-    result.data.items[0];
+    if (!v) {
+      player.innerHTML = `
+        <div class="notice">
+          YouTube video not found.
+        </div>
+      `;
 
-  const snippet =
-    video.snippet || {};
+      return;
+    }
 
-  const stats =
-    video.statistics || {};
+    const snippet =
+      v.snippet || {};
 
-  player.innerHTML = `
-    <div class="playerInner">
+    const stats =
+      v.statistics || {};
+
+    if ($('#title')) {
+      $('#title').textContent =
+        snippet.title ||
+        'YouTube video';
+    }
+
+    if ($('#desc')) {
+      $('#desc').textContent =
+        snippet.description ||
+        '';
+    }
+
+    if ($('#views')) {
+      $('#views').textContent =
+        `${formatYouTubeCount(stats.viewCount)} views • ${date(snippet.publishedAt)}`;
+    }
+
+    if ($('#category')) {
+      $('#category').textContent =
+        'YouTube';
+    }
+
+    player.innerHTML = `
       <iframe
-        src="https://www.youtube.com/embed/${encodeURIComponent(id)}?rel=0"
+        src="https://www.youtube.com/embed/${encodeURIComponent(youtubeId)}?enablejsapi=1"
         title="${esc(snippet.title || 'YouTube video')}"
-        frameborder="0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowfullscreen
+        style="
+          width:100%;
+          height:100%;
+          min-height:300px;
+          border:0;
+          border-radius:14px;
+        "
       ></iframe>
-    </div>
-  `;
+    `;
 
-  const title =
-    $('#watchTitle');
-
-  if (title) {
-    title.textContent =
+    loadYouTubeRelated(
       snippet.title ||
-      'YouTube video';
-  }
+      ''
+    );
+  } catch (error) {
+    console.error(
+      'YouTube watch error:',
+      error
+    );
 
-  const channel =
-    $('#watchChannel');
-
-  if (channel) {
-    channel.textContent =
-      snippet.channelTitle ||
-      '';
-  }
-
-  const views =
-    $('#watchViews');
-
-  if (views) {
-    views.textContent =
-      `${formatYouTubeCount(
-        stats.viewCount
-      )} views`;
-  }
-
-  const desc =
-    $('#watchDescription');
-
-  if (desc) {
-    desc.textContent =
-      snippet.description ||
-      '';
+    player.innerHTML = youtubeErrorHtml(
+      error
+    );
   }
 }
 
-
-/* =========================================================
-   RELATED YOUTUBE VIDEOS
-   ========================================================= */
+/* =========================================
+   YOUTUBE RELATED
+========================================= */
 
 async function loadYouTubeRelated(
-  container,
   query
 ) {
-  if (!container) {
-    return;
-  }
+  const e =
+    $('#related');
 
-  await loadYouTubeSearch(
-    container,
-    query || 'DivineTube'
-  );
+  if (!e || !query)
+    return;
+
+  try {
+    const results =
+      await loadYouTubeSearch(
+        query,
+        8
+      );
+
+    e.innerHTML =
+      results
+        .map(youtubeCard)
+        .join('') ||
+      `
+        <div class="notice">
+          No related videos.
+        </div>
+      `;
+  } catch (error) {
+    console.error(
+      'Related YouTube error:',
+      error
+    );
+
+    e.innerHTML =
+      youtubeErrorHtml(
+        error
+      );
+  }
 }
 
-
-/* =========================================================
+/* =========================================
    LOCAL WATCH PAGE
-   ========================================================= */
+========================================= */
 
 async function localWatchPage(id) {
-  const s = getSb();
+  const s =
+    getSb();
 
-  if (!s || !id) {
+  if (!id || !s)
     return;
-  }
-
-  const player =
-    $('#player');
-
-  if (player) {
-    player.innerHTML =
-      loading('Loading video…');
-  }
 
   const {
-    data: video,
+    data: v,
     error
   } =
     await s
       .from('videos')
       .select(
-        `
-          *,
-          profiles(
-            username,
-            avatar_url
-          )
-        `
+        '*,profiles(username,avatar_url)'
       )
-      .eq('id', id)
-      .maybeSingle();
+      .eq(
+        'id',
+        id
+      )
+      .single();
 
-  if (error) {
-    console.error(
-      'Load video error:',
-      error
-    );
-
-    if (player) {
-      player.innerHTML =
-        `
-          <div class="notice">
-            ${esc(error.message)}
-          </div>
-        `;
-    }
-
+  if (error || !v)
     return;
+
+  if ($('#title')) {
+    $('#title').textContent =
+      v.title;
   }
 
-  if (!video) {
-    if (player) {
-      player.innerHTML =
-        `
-          <div class="notice">
-            Video not found.
-          </div>
-        `;
-    }
-
-    return;
+  if ($('#desc')) {
+    $('#desc').textContent =
+      v.description ||
+      'No description.';
   }
 
-  /* -------------------------------------------------------
-     PLAYER
-     ------------------------------------------------------- */
+  if ($('#views')) {
+    $('#views').textContent =
+      `${fmt(v.views)} views • ${date(v.created_at)}`;
+  }
 
-  if (player) {
+  if ($('#category')) {
+    $('#category').textContent =
+      v.category ||
+      'General';
+  }
+
+  if ($('#channel')) {
+    $('#channel').textContent =
+      v.profiles?.username ||
+      'Creator';
+  }
+
+  if ($('#player')) {
+    const player =
+      $('#player');
 
     player.innerHTML = `
-      <div class="playerInner">
-
-        <video
-          id="mainVideo"
-          controls
-          playsinline
-          preload="metadata"
-          ${
-            video.thumbnail_url
-              ? `poster="${esc(video.thumbnail_url)}"`
-              : ''
-          }
-        >
-          <source
-            src="${esc(video.video_url)}"
-            type="video/mp4"
-          >
-
-          Your browser does not support video playback.
-        </video>
-
-      </div>
+      <video
+        class="playerInner"
+        controls
+        playsinline
+        preload="metadata"
+        ${
+          v.thumbnail_url
+            ? `poster="${esc(v.thumbnail_url)}"`
+            : ''
+        }
+        src="${esc(v.video_url)}"
+      ></video>
     `;
-  }
 
-  const mainVideo =
-    $('#mainVideo');
+    const video =
+      player.querySelector(
+        'video'
+      );
 
-  /* -------------------------------------------------------
-     RESUME POSITION
-     ------------------------------------------------------- */
-
-  const resumeKey =
-    `dt_resume_${id}`;
-
-  if (mainVideo) {
-
-    const saved =
-      Number(
-        localStorage.getItem(
-          resumeKey
-        ) || 0
+    const savedTime =
+      localStorage.getItem(
+        `dt_pos_${v.id}`
       );
 
     if (
-      Number.isFinite(saved) &&
-      saved > 3
+      savedTime &&
+      video
     ) {
-      mainVideo.addEventListener(
+      video.addEventListener(
         'loadedmetadata',
         () => {
+          const time =
+            Number(savedTime);
 
-          try {
-
-            if (
-              saved <
-              mainVideo.duration - 5
-            ) {
-              mainVideo.currentTime =
-                saved;
-            }
-
-          } catch (_) {}
+          if (
+            Number.isFinite(
+              time
+            ) &&
+            time > 0 &&
+            time <
+              video.duration
+          ) {
+            video.currentTime =
+              time;
+          }
         },
         {
           once: true
@@ -2454,387 +1700,267 @@ async function localWatchPage(id) {
       );
     }
 
-    let saveTimer;
-
-    mainVideo.addEventListener(
+    video?.addEventListener(
       'timeupdate',
       () => {
-
-        clearTimeout(
-          saveTimer
-        );
-
-        saveTimer =
-          setTimeout(
-            () => {
-              try {
-                localStorage.setItem(
-                  resumeKey,
-                  String(
-                    Math.floor(
-                      mainVideo.currentTime
-                    )
-                  )
-                );
-              } catch (_) {}
-            },
-            500
+        if (
+          video.currentTime >
+          2
+        ) {
+          localStorage.setItem(
+            `dt_pos_${v.id}`,
+            video.currentTime
           );
-      }
-    );
-
-    mainVideo.addEventListener(
-      'ended',
-      () => {
-        localStorage.removeItem(
-          resumeKey
-        );
-      }
-    );
-  }
-
-  /* -------------------------------------------------------
-     VIEW COUNT
-     ------------------------------------------------------- */
-
-  let counted =
-    false;
-
-  async function countView() {
-
-    if (counted) {
-      return;
-    }
-
-    counted = true;
-
-    try {
-
-      const {
-        error
-      } =
-        await s.rpc(
-          'increment_view',
-          {
-            video_id:
-              id
-          }
-        );
-
-      if (error) {
-        console.warn(
-          'View count RPC:',
-          error
-        );
-      }
-
-    } catch (error) {
-      console.warn(
-        'View count error:',
-        error
-      );
-    }
-  }
-
-  if (mainVideo) {
-    mainVideo.addEventListener(
-      'play',
-      countView,
-      {
-        once: true
-      }
-    );
-  }
-
-  /* -------------------------------------------------------
-     HISTORY
-     ------------------------------------------------------- */
-
-  const user =
-    await currentUser();
-
-  if (user) {
-    await recordHistory(
-      user.id,
-      id
-    );
-  }
-
-  /* -------------------------------------------------------
-     TITLE
-     ------------------------------------------------------- */
-
-  const title =
-    $('#watchTitle');
-
-  if (title) {
-    title.textContent =
-      video.title ||
-      'Untitled video';
-  }
-
-  /* -------------------------------------------------------
-     CHANNEL
-     ------------------------------------------------------- */
-
-  const username =
-    video.profiles?.username ||
-    'DivineTube';
-
-  const channel =
-    $('#watchChannel');
-
-  if (channel) {
-    channel.textContent =
-      username;
-  }
-
-  /* -------------------------------------------------------
-     VIEWS
-     ------------------------------------------------------- */
-
-  const views =
-    $('#watchViews');
-
-  if (views) {
-    views.textContent =
-      `${fmt(video.views || 0)} views`;
-  }
-
-  /* -------------------------------------------------------
-     DESCRIPTION
-     ------------------------------------------------------- */
-
-  const description =
-    $('#watchDescription');
-
-  if (description) {
-    description.textContent =
-      video.description ||
-      '';
-  }
-
-  /* -------------------------------------------------------
-     LIKE
-     ------------------------------------------------------- */
-
-  const likeBtn =
-    $('#likeBtn');
-
-  const likeCount =
-    $('#likeCount');
-
-  if (likeBtn) {
-
-    likeBtn.onclick =
-      async () => {
-
-        if (!user) {
-          toast(
-            'Please sign in to like videos.'
-          );
-
-          return;
         }
-
-        await updateLike(
-          id,
-          user.id,
-          likeBtn,
-          likeCount
-        );
-      };
+      }
+    );
   }
 
-  /* -------------------------------------------------------
-     SAVE
-     ------------------------------------------------------- */
+  loadVideos(
+    '#related',
+    '',
+    8
+  );
 
-  const saveBtn =
-    $('#saveBtn');
+  await s.rpc(
+    'increment_view',
+    {
+      video_uuid:
+        v.id
+    }
+  );
 
-  if (saveBtn) {
+  await recordHistory(
+    v.id
+  );
 
-    saveBtn.onclick =
-      async () => {
-
-        if (!user) {
-          toast(
-            'Please sign in to save videos.'
-          );
-
-          return;
-        }
-
-        await updateSave(
-          id,
-          user.id,
-          saveBtn
-        );
-      };
-  }
-
-  /* -------------------------------------------------------
-     COMMENTS
-     ------------------------------------------------------- */
-
-  await loadComments(
+  await updateLike(
     id
   );
 
-  const commentForm =
-    $('#commentForm');
+  await updateSave(
+    id
+  );
 
-  if (
-    commentForm &&
-    user
-  ) {
+  loadComments(
+    id
+  );
 
-    commentForm.onsubmit =
-      async e => {
+  /* LIKE */
 
-        e.preventDefault();
+  $('#like')?.addEventListener(
+    'click',
+    async () => {
+      const u =
+        await currentUser();
 
-        const input =
-          $('#commentInput');
+      if (!u) {
+        location.href =
+          'auth.html';
 
-        const content =
-          input?.value.trim() ||
-          '';
+        return;
+      }
 
-        if (!content) {
-          return;
-        }
+      const {
+        data
+      } =
+        await s
+          .from('likes')
+          .select(
+            'video_id'
+          )
+          .eq(
+            'video_id',
+            id
+          )
+          .eq(
+            'user_id',
+            u.id
+          )
+          .maybeSingle();
 
-        const {
-          error
-        } =
-          await s
-            .from('comments')
-            .insert({
-              video_id: id,
-              user_id: user.id,
-              content
-            });
-
-        if (error) {
-          toast(
-            error.message ||
-            'Could not post comment.'
+      if (data) {
+        await s
+          .from('likes')
+          .delete()
+          .eq(
+            'video_id',
+            id
+          )
+          .eq(
+            'user_id',
+            u.id
           );
+      } else {
+        await s
+          .from('likes')
+          .insert({
+            video_id:
+              id,
 
-          return;
-        }
+            user_id:
+              u.id
+          });
+      }
 
-        if (input) {
-          input.value = '';
-        }
+      updateLike(
+        id
+      );
+    }
+  );
 
-        await loadComments(
-          id
-        );
+  /* SAVE */
+
+  $('#save')?.addEventListener(
+    'click',
+    async () => {
+      const u =
+        await currentUser();
+
+      if (!u) {
+        location.href =
+          'auth.html';
+
+        return;
+      }
+
+      const {
+        data
+      } =
+        await s
+          .from('saved_videos')
+          .select(
+            'video_id'
+          )
+          .eq(
+            'video_id',
+            id
+          )
+          .eq(
+            'user_id',
+            u.id
+          )
+          .maybeSingle();
+
+      if (data) {
+        await s
+          .from('saved_videos')
+          .delete()
+          .eq(
+            'video_id',
+            id
+          )
+          .eq(
+            'user_id',
+            u.id
+          );
+      } else {
+        await s
+          .from('saved_videos')
+          .insert({
+            video_id:
+              id,
+
+            user_id:
+              u.id
+          });
+      }
+
+      updateSave(
+        id
+      );
+    }
+  );
+
+  /* SHARE */
+
+  $('#share')?.addEventListener(
+    'click',
+    async () => {
+      try {
+        await navigator.clipboard
+          .writeText(
+            location.href
+          );
 
         toast(
-          'Comment posted.'
+          'Link copied'
         );
-      };
-  }
-
-  /* -------------------------------------------------------
-     SUBSCRIBE
-     ------------------------------------------------------- */
-
-  const subscribeBtn =
-    $('#subscribeBtn');
-
-  if (
-    subscribeBtn &&
-    user
-  ) {
-
-    subscribeBtn.onclick =
-      async () => {
-
-        await subscribe(
-          user.id,
-          video.owner_id,
-          subscribeBtn
+      } catch {
+        toast(
+          'Copy the page URL'
         );
-      };
-  }
-
-  /* -------------------------------------------------------
-     SHARE
-     ------------------------------------------------------- */
-
-  const shareBtn =
-    $('#shareBtn');
-
-  if (shareBtn) {
-
-    shareBtn.onclick =
-      async () => {
-
-        const url =
-          location.href;
-
-        try {
-
-          if (
-            navigator.share
-          ) {
-            await navigator.share({
-              title:
-                video.title,
-              url
-            });
-
-          } else if (
-            navigator.clipboard
-          ) {
-            await navigator.clipboard.writeText(
-              url
-            );
-
-            toast(
-              'Video link copied.'
-            );
-          }
-
-        } catch (error) {
-          console.warn(
-            'Share cancelled:',
-            error
-          );
-        }
-      };
-  }
-
-  /* -------------------------------------------------------
-     RELATED VIDEOS
-     ------------------------------------------------------- */
-
-  const related =
-    $('#relatedVideos');
-
-  if (related) {
-
-    await loadVideos(
-      related,
-      {
-        category:
-          video.category ||
-          '',
-        youtube: true
       }
-    );
-  }
+    }
+  );
+
+  /* SUBSCRIBE */
+
+  $('#subscribe')?.addEventListener(
+    'click',
+    () =>
+      subscribe(
+        v.owner_id
+      )
+  );
+
+  /* COMMENT */
+
+  $('#commentBtn')?.addEventListener(
+    'click',
+    async () => {
+      const u =
+        await currentUser();
+
+      if (!u) {
+        location.href =
+          'auth.html';
+
+        return;
+      }
+
+      const content =
+        $('#commentInput')
+          ?.value
+          .trim();
+
+      if (!content)
+        return;
+
+      const r =
+        await s
+          .from('comments')
+          .insert({
+            video_id:
+              id,
+
+            user_id:
+              u.id,
+
+            content
+          });
+
+      if (r.error) {
+        toast(
+          r.error.message
+        );
+
+        return;
+      }
+
+      $('#commentInput')
+        .value = '';
+
+      loadComments(
+        id
+      );
+    }
+  );
 }
 
-
-/* =========================================================
+/* =========================================
    WATCH ROUTER
-   ========================================================= */
+========================================= */
 
 async function watchPage() {
   const params =
@@ -2842,1804 +1968,1158 @@ async function watchPage() {
       location.search
     );
 
-  const localId =
-    params.get('id');
+  const youtubeId =
+    params.get(
+      'youtube'
+    );
 
-  const ytId =
-    params.get('yt');
+  const localId =
+    params.get(
+      'id'
+    );
+
+  if (youtubeId) {
+    await youtubeWatchPage(
+      youtubeId
+    );
+
+    return;
+  }
 
   if (localId) {
     await localWatchPage(
       localId
     );
-
-    return;
-  }
-
-  if (ytId) {
-    await youtubeWatchPage(
-      ytId
-    );
-
-    return;
   }
 }
 
-
-/* =========================================================
+/* =========================================
    HISTORY
-   ========================================================= */
+========================================= */
 
-async function recordHistory(
-  userId,
-  videoId
-) {
-  const s = getSb();
+async function recordHistory(id) {
+  const s =
+    getSb();
 
-  if (!s || !userId || !videoId) {
-    return;
-  }
+  const u =
+    await currentUser();
 
-  try {
+  if (
+    u &&
+    s
+  ) {
+    await s
+      .from('watch_history')
+      .upsert(
+        {
+          user_id:
+            u.id,
 
-    const {
-      error
-    } =
-      await s
-        .from('history')
-        .upsert(
-          {
-            user_id:
-              userId,
-            video_id:
-              videoId,
-            watched_at:
-              new Date().toISOString()
-          },
-          {
-            onConflict:
-              'user_id,video_id'
-          }
-        );
+          video_id:
+            id,
 
-    if (error) {
-      console.warn(
-        'History error:',
-        error
+          watched_at:
+            new Date()
+              .toISOString()
+        },
+        {
+          onConflict:
+            'user_id,video_id'
+        }
       );
-    }
-
-  } catch (error) {
-    console.warn(
-      'History error:',
-      error
-    );
   }
 }
 
+/* =========================================
+   LIKE STATUS
+========================================= */
 
-/* =========================================================
-   LIKE
-   ========================================================= */
+async function updateLike(id) {
+  const s =
+    getSb();
 
-async function updateLike(
-  videoId,
-  userId,
-  button,
-  countEl
-) {
-  const s = getSb();
+  const u =
+    await currentUser();
 
-  if (!s) {
+  const b =
+    $('#like');
+
+  if (!b || !s)
+    return;
+
+  if (!u) {
+    b.textContent =
+      '👍 Like';
+
     return;
   }
 
-  try {
+  const {
+    data
+  } =
+    await s
+      .from('likes')
+      .select(
+        'video_id'
+      )
+      .eq(
+        'video_id',
+        id
+      )
+      .eq(
+        'user_id',
+        u.id
+      )
+      .maybeSingle();
 
-    const {
-      data: existing,
-      error: checkError
-    } =
-      await s
-        .from('likes')
-        .select('id')
-        .eq(
-          'video_id',
-          videoId
-        )
-        .eq(
-          'user_id',
-          userId
-        )
-        .maybeSingle();
-
-    if (checkError) {
-      throw checkError;
-    }
-
-    if (existing) {
-
-      const {
-        error
-      } =
-        await s
-          .from('likes')
-          .delete()
-          .eq(
-            'id',
-            existing.id
-          );
-
-      if (error) {
-        throw error;
-      }
-
-      if (button) {
-        button.classList.remove(
-          'active'
-        );
-      }
-
-      if (countEl) {
-        const current =
-          Number(
-            countEl.dataset.count ||
-            countEl.textContent ||
-            0
-          );
-
-        countEl.dataset.count =
-          String(
-            Math.max(
-              0,
-              current - 1
-            )
-          );
-
-        countEl.textContent =
-          fmt(
-            Math.max(
-              0,
-              current - 1
-            )
-          );
-      }
-
-    } else {
-
-      const {
-        error
-      } =
-        await s
-          .from('likes')
-          .insert({
-            video_id:
-              videoId,
-            user_id:
-              userId
-          });
-
-      if (error) {
-        throw error;
-      }
-
-      if (button) {
-        button.classList.add(
-          'active'
-        );
-      }
-
-      if (countEl) {
-        const current =
-          Number(
-            countEl.dataset.count ||
-            countEl.textContent ||
-            0
-          );
-
-        countEl.dataset.count =
-          String(
-            current + 1
-          );
-
-        countEl.textContent =
-          fmt(
-            current + 1
-          );
-      }
-    }
-
-  } catch (error) {
-
-    console.error(
-      'Like error:',
-      error
-    );
-
-    toast(
-      error.message ||
-      'Could not update like.'
-    );
-  }
+  b.textContent =
+    data
+      ? '👍 Liked'
+      : '👍 Like';
 }
 
+/* =========================================
+   SAVE STATUS
+========================================= */
 
-/* =========================================================
-   SAVE
-   ========================================================= */
+async function updateSave(id) {
+  const s =
+    getSb();
 
-async function updateSave(
-  videoId,
-  userId,
-  button
-) {
-  const s = getSb();
+  const u =
+    await currentUser();
 
-  if (!s) {
+  const b =
+    $('#save');
+
+  if (!b || !s)
+    return;
+
+  if (!u) {
+    b.textContent =
+      '💾 Save';
+
     return;
   }
 
-  try {
+  const {
+    data
+  } =
+    await s
+      .from('saved_videos')
+      .select(
+        'video_id'
+      )
+      .eq(
+        'video_id',
+        id
+      )
+      .eq(
+        'user_id',
+        u.id
+      )
+      .maybeSingle();
 
-    const {
-      data: existing,
-      error: checkError
-    } =
-      await s
-        .from('saved_videos')
-        .select('id')
-        .eq(
-          'video_id',
-          videoId
-        )
-        .eq(
-          'user_id',
-          userId
-        )
-        .maybeSingle();
-
-    if (checkError) {
-      throw checkError;
-    }
-
-    if (existing) {
-
-      const {
-        error
-      } =
-        await s
-          .from('saved_videos')
-          .delete()
-          .eq(
-            'id',
-            existing.id
-          );
-
-      if (error) {
-        throw error;
-      }
-
-      button.classList.remove(
-        'active'
-      );
-
-      button.textContent =
-        'Save';
-
-      toast(
-        'Removed from saved videos.'
-      );
-
-    } else {
-
-      const {
-        error
-      } =
-        await s
-          .from('saved_videos')
-          .insert({
-            video_id:
-              videoId,
-            user_id:
-              userId
-          });
-
-      if (error) {
-        throw error;
-      }
-
-      button.classList.add(
-        'active'
-      );
-
-      button.textContent =
-        'Saved';
-
-      toast(
-        'Video saved.'
-      );
-    }
-
-  } catch (error) {
-
-    console.error(
-      'Save error:',
-      error
-    );
-
-    toast(
-      error.message ||
-      'Could not save video.'
-    );
-  }
+  b.textContent =
+    data
+      ? '💾 Saved'
+      : '💾 Save';
 }
 
-
-/* =========================================================
+/* =========================================
    COMMENTS
-   ========================================================= */
+========================================= */
 
-async function loadComments(
-  videoId
-) {
-  const s = getSb();
+async function loadComments(id) {
+  const s =
+    getSb();
 
-  const container =
-    $('#comments');
+  if (!s)
+    return;
 
-  if (!container || !s) {
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('comments')
+      .select(
+        'content,created_at,profiles(username)'
+      )
+      .eq(
+        'video_id',
+        id
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      );
+
+  if (error) {
+    console.error(
+      error
+    );
+
     return;
   }
 
-  container.innerHTML =
-    loading('Loading comments…');
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await s
-        .from('comments')
-        .select(
-          'content,created_at,profiles(username)'
-        )
-        .eq(
-          'video_id',
-          videoId
-        )
-        .order(
-          'created_at',
-          {
-            ascending: false
-          }
-        );
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data?.length) {
-      container.innerHTML =
-        `
-          <div class="notice">
-            No comments yet.
-          </div>
-        `;
-
-      return;
-    }
-
-    container.innerHTML =
-      data
-        .map(comment => {
-
-          const username =
-            comment.profiles?.username ||
-            'User';
-
-          return `
+  if ($('#comments')) {
+    $('#comments').innerHTML =
+      (data || [])
+        .map(
+          c => `
             <div class="comment">
 
-              <div class="commentAvatar">
-                ${esc(
-                  username
-                    .slice(0, 2)
-                    .toUpperCase()
-                )}
-              </div>
+              ${avatar(
+                c.profiles?.username ||
+                'U'
+              )}
 
-              <div class="commentBody">
+              <div>
 
                 <strong>
-                  ${esc(username)}
-                </strong>
-
-                <span class="commentDate">
                   ${esc(
-                    date(
-                      comment.created_at
-                    )
+                    c.profiles?.username ||
+                    'User'
                   )}
-                </span>
+                </strong>
 
                 <p>
                   ${esc(
-                    comment.content
+                    c.content
                   )}
                 </p>
+
+                <small class="muted">
+                  ${new Date(
+                    c.created_at
+                  ).toLocaleString()}
+                </small>
 
               </div>
 
             </div>
-          `;
-        })
-        .join('');
-
-  } catch (error) {
-
-    console.error(
-      'Comments error:',
-      error
-    );
-
-    container.innerHTML =
+          `
+        )
+        .join('') ||
       `
-        <div class="notice">
-          ${esc(
-            error.message ||
-            'Could not load comments.'
-          )}
-        </div>
+        <p class="muted">
+          No comments yet.
+        </p>
       `;
   }
 }
 
-
-/* =========================================================
+/* =========================================
    SUBSCRIBE
-   ========================================================= */
+========================================= */
 
 async function subscribe(
-  userId,
-  channelId,
-  button
+  channelId
 ) {
-  const s = getSb();
+  const s =
+    getSb();
 
-  if (!s) {
+  const u =
+    await currentUser();
+
+  if (!u || !s) {
+    location.href =
+      'auth.html';
+
     return;
   }
 
   if (
-    !userId ||
-    !channelId
-  ) {
-    return;
-  }
-
-  if (
-    userId === channelId
+    u.id ===
+    channelId
   ) {
     toast(
-      'You cannot subscribe to yourself.'
+      'This is your channel.'
     );
 
     return;
   }
 
-  try {
+  const {
+    data
+  } =
+    await s
+      .from('subscriptions')
+      .select(
+        'channel_id'
+      )
+      .eq(
+        'subscriber_id',
+        u.id
+      )
+      .eq(
+        'channel_id',
+        channelId
+      )
+      .maybeSingle();
 
-    const {
-      data: existing,
-      error: checkError
-    } =
-      await s
-        .from('subscriptions')
-        .select('id')
-        .eq(
-          'subscriber_id',
-          userId
-        )
-        .eq(
-          'channel_id',
+  if (data) {
+    await s
+      .from('subscriptions')
+      .delete()
+      .eq(
+        'subscriber_id',
+        u.id
+      )
+      .eq(
+        'channel_id',
+        channelId
+      );
+  } else {
+    await s
+      .from('subscriptions')
+      .insert({
+        subscriber_id:
+          u.id,
+
+        channel_id:
           channelId
-        )
-        .maybeSingle();
-
-    if (checkError) {
-      throw checkError;
-    }
-
-    if (existing) {
-
-      const {
-        error
-      } =
-        await s
-          .from('subscriptions')
-          .delete()
-          .eq(
-            'id',
-            existing.id
-          );
-
-      if (error) {
-        throw error;
-      }
-
-      if (button) {
-        button.textContent =
-          'Subscribe';
-
-        button.classList.remove(
-          'subscribed'
-        );
-      }
-
-      toast(
-        'Unsubscribed.'
-      );
-
-    } else {
-
-      const {
-        error
-      } =
-        await s
-          .from('subscriptions')
-          .insert({
-            subscriber_id:
-              userId,
-            channel_id:
-              channelId
-          });
-
-      if (error) {
-        throw error;
-      }
-
-      if (button) {
-        button.textContent =
-          'Subscribed';
-
-        button.classList.add(
-          'subscribed'
-        );
-      }
-
-      toast(
-        'Subscribed.'
-      );
-    }
-
-  } catch (error) {
-
-    console.error(
-      'Subscribe error:',
-      error
-    );
-
-    toast(
-      error.message ||
-      'Could not update subscription.'
-    );
+      });
   }
+
+  toast(
+    data
+      ? 'Unsubscribed'
+      : 'Subscribed'
+  );
 }
 
-
-/* =========================================================
+/* =========================================
    TRENDING
-   ========================================================= */
+========================================= */
 
 async function loadTrending() {
-  const container =
-    $('#trendingVideos');
+  const e =
+    $('#trending');
 
-  if (!container) {
+  if (!e)
     return;
-  }
 
-  await loadVideos(
-    container,
-    {
-      youtube: true
-    }
-  );
+  loading(e);
+
+  try {
+    const yt =
+      await loadYouTubePopular(
+        20
+      );
+
+    e.innerHTML =
+      yt
+        .map(
+          youtubeCard
+        )
+        .join('') ||
+      `
+        <div class="notice">
+          No YouTube videos found.
+        </div>
+      `;
+  } catch (error) {
+    console.error(
+      'Trending YouTube error:',
+      error
+    );
+
+    e.innerHTML =
+      youtubeErrorHtml(
+        error
+      );
+  }
 }
 
-
-/* =========================================================
-   CHANNEL PAGE
-   ========================================================= */
+/* =========================================
+   CHANNEL
+========================================= */
 
 async function channelPage() {
-  const container =
-    $('#channelVideos');
+  const s =
+    getSb();
 
-  if (!container) {
+  if (
+    !$('#channelVideos') ||
+    !s
+  )
     return;
-  }
 
-  const params =
-    new URLSearchParams(
-      location.search
-    );
+  const u =
+    await currentUser();
 
-  const channelId =
-    params.get('id');
-
-  if (!channelId) {
-    container.innerHTML =
+  if (!u) {
+    $('#channelVideos').innerHTML =
       `
         <div class="notice">
-          Channel not found.
+          Sign in to see your channel.
         </div>
       `;
 
     return;
   }
 
-  const s = getSb();
+  const {
+    data: p
+  } =
+    await s
+      .from('profiles')
+      .select('*')
+      .eq(
+        'id',
+        u.id
+      )
+      .single();
 
-  if (!s) {
-    return;
+  if ($('#channelName')) {
+    $('#channelName').textContent =
+      p?.username ||
+      u.email.split('@')[0];
   }
 
-  try {
+  if ($('#channelAvatar')) {
+    $('#channelAvatar').textContent =
+      initials(u);
+  }
 
-    const {
-      data: profile,
-      error
-    } =
-      await s
-        .from('profiles')
-        .select(
-          'id,username,avatar_url'
-        )
-        .eq(
-          'id',
-          channelId
-        )
-        .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    if (profile) {
-
-      const name =
-        $('#channelName');
-
-      if (name) {
-        name.textContent =
-          profile.username ||
-          'Channel';
-      }
-
-      const avatarEl =
-        $('#channelAvatar');
-
-      if (avatarEl) {
-
-        if (profile.avatar_url) {
-          avatarEl.innerHTML =
-            `
-              <img
-                src="${esc(
-                  profile.avatar_url
-                )}"
-                alt=""
-              >
-            `;
-        } else {
-          avatarEl.textContent =
-            String(
-              profile.username ||
-              'U'
-            )
-              .slice(0, 2)
-              .toUpperCase();
+  const {
+    count
+  } =
+    await s
+      .from('subscriptions')
+      .select(
+        '*',
+        {
+          count:
+            'exact',
+          head:
+            true
         }
-      }
-    }
+      )
+      .eq(
+        'channel_id',
+        u.id
+      );
 
-    const {
-      data: videos,
-      error: videosError
-    } =
-      await s
-        .from('videos')
-        .select(
-          `
-            *,
-            profiles(username,avatar_url)
-          `
-        )
-        .eq(
-          'owner_id',
-          channelId
-        )
-        .order(
-          'created_at',
-          {
-            ascending: false
-          }
-        );
+  if ($('#subs')) {
+    $('#subs').textContent =
+      `${fmt(count)} subscribers`;
+  }
 
-    if (videosError) {
-      throw videosError;
-    }
+  const {
+    data
+  } =
+    await s
+      .from('videos')
+      .select(
+        '*,profiles(username)'
+      )
+      .eq(
+        'owner_id',
+        u.id
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      );
 
-    if (!videos?.length) {
-
-      container.innerHTML =
-        `
-          <div class="notice">
-            This channel has no videos yet.
-          </div>
-        `;
-
-      return;
-    }
-
-    container.innerHTML =
-      videos
+  $('#channelVideos')
+    .innerHTML =
+      (data || [])
         .map(card)
-        .join('');
-
-  } catch (error) {
-
-    console.error(
-      'Channel error:',
-      error
-    );
-
-    container.innerHTML =
+        .join('') ||
       `
         <div class="notice">
-          ${esc(
-            error.message ||
-            'Could not load channel.'
-          )}
+          No videos yet.
         </div>
       `;
-  }
 }
 
-
-/* =========================================================
-   SUBSCRIPTIONS PAGE
-   ========================================================= */
+/* =========================================
+   SUBSCRIPTIONS
+========================================= */
 
 async function subscriptionsPage() {
-  const container =
-    $('#subscriptionVideos');
+  const s =
+    getSb();
 
-  if (!container) {
+  if (
+    !$('#subVideos') ||
+    !s
+  )
     return;
-  }
 
-  const s = getSb();
-  const user =
+  const u =
     await currentUser();
 
-  if (!user) {
-    container.innerHTML =
+  if (!u) {
+    $('#subVideos').innerHTML =
       `
         <div class="notice">
-          Please sign in to view your subscriptions.
+          Sign in to see subscriptions.
         </div>
       `;
 
     return;
   }
 
-  if (!s) {
+  const {
+    data
+  } =
+    await s
+      .from('subscriptions')
+      .select(
+        'channel_id'
+      )
+      .eq(
+        'subscriber_id',
+        u.id
+      );
+
+  const ids =
+    (data || [])
+      .map(
+        x =>
+          x.channel_id
+      );
+
+  if (!ids.length) {
+    $('#subVideos').innerHTML =
+      `
+        <div class="notice">
+          No subscriptions yet.
+        </div>
+      `;
+
     return;
   }
 
-  try {
+  const r =
+    await s
+      .from('videos')
+      .select(
+        '*,profiles(username)'
+      )
+      .in(
+        'owner_id',
+        ids
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false
+        }
+      );
 
-    const {
-      data: subscriptions,
-      error
-    } =
-      await s
-        .from('subscriptions')
-        .select(
-          'channel_id'
-        )
-        .eq(
-          'subscriber_id',
-          user.id
-        );
-
-    if (error) {
-      throw error;
-    }
-
-    const ids =
-      (subscriptions || [])
-        .map(x => x.channel_id)
-        .filter(Boolean);
-
-    if (!ids.length) {
-
-      container.innerHTML =
-        `
-          <div class="notice">
-            You are not subscribed to any channels yet.
-          </div>
-        `;
-
-      return;
-    }
-
-    const {
-      data: videos,
-      error: videoError
-    } =
-      await s
-        .from('videos')
-        .select(
-          `
-            *,
-            profiles(username,avatar_url)
-          `
-        )
-        .in(
-          'owner_id',
-          ids
-        )
-        .order(
-          'created_at',
-          {
-            ascending: false
-          }
-        );
-
-    if (videoError) {
-      throw videoError;
-    }
-
-    if (!videos?.length) {
-
-      container.innerHTML =
-        `
-          <div class="notice">
-            Your subscribed channels have no videos yet.
-          </div>
-        `;
-
-      return;
-    }
-
-    container.innerHTML =
-      videos
+  $('#subVideos')
+    .innerHTML =
+      (r.data || [])
         .map(card)
-        .join('');
-
-  } catch (error) {
-
-    console.error(
-      'Subscriptions error:',
-      error
-    );
-
-    container.innerHTML =
+        .join('') ||
       `
         <div class="notice">
-          ${esc(
-            error.message ||
-            'Could not load subscriptions.'
-          )}
+          No new videos.
         </div>
       `;
-  }
 }
 
-
-/* =========================================================
-   LIBRARY PAGE
-   ========================================================= */
+/* =========================================
+   LIBRARY
+========================================= */
 
 async function libraryPage() {
-  const container =
-    $('#libraryVideos');
+  const s =
+    getSb();
 
-  if (!container) {
+  if (
+    !$('#libraryVideos') ||
+    !s
+  )
     return;
-  }
 
-  const s = getSb();
-  const user =
+  const u =
     await currentUser();
 
-  if (!user) {
-
-    container.innerHTML =
+  if (!u) {
+    $('#libraryVideos').innerHTML =
       `
         <div class="notice">
-          Please sign in to view your library.
+          Sign in to use your library.
         </div>
       `;
 
     return;
   }
 
-  if (!s) {
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('saved_videos')
+      .select(
+        'videos(*,profiles(username))'
+      )
+      .eq(
+        'user_id',
+        u.id
+      );
+
+  if (error) {
+    $('#libraryVideos').innerHTML =
+      `
+        <div class="notice">
+          ${esc(error.message)}
+        </div>
+      `;
+
     return;
   }
 
-  try {
-
-    const {
-      data: saved,
-      error
-    } =
-      await s
-        .from('saved_videos')
-        .select(
-          'video_id'
+  $('#libraryVideos')
+    .innerHTML =
+      (data || [])
+        .map(
+          x =>
+            x.videos
         )
-        .eq(
-          'user_id',
-          user.id
-        );
-
-    if (error) {
-      throw error;
-    }
-
-    const ids =
-      (saved || [])
-        .map(x => x.video_id)
-        .filter(Boolean);
-
-    if (!ids.length) {
-
-      container.innerHTML =
-        `
-          <div class="notice">
-            You have no saved videos yet.
-          </div>
-        `;
-
-      return;
-    }
-
-    const {
-      data: videos,
-      error: videoError
-    } =
-      await s
-        .from('videos')
-        .select(
-          `
-            *,
-            profiles(username,avatar_url)
-          `
-        )
-        .in(
-          'id',
-          ids
-        )
-        .order(
-          'created_at',
-          {
-            ascending: false
-          }
-        );
-
-    if (videoError) {
-      throw videoError;
-    }
-
-    container.innerHTML =
-      (videos || [])
+        .filter(Boolean)
         .map(card)
-        .join('');
-
-  } catch (error) {
-
-    console.error(
-      'Library error:',
-      error
-    );
-
-    container.innerHTML =
+        .join('') ||
       `
         <div class="notice">
-          ${esc(
-            error.message ||
-            'Could not load library.'
-          )}
+          No saved videos.
         </div>
       `;
-  }
 }
 
-
-/* =========================================================
+/* =========================================
    HISTORY PAGE
-   ========================================================= */
+========================================= */
 
 async function historyPage() {
-  const container =
-    $('#historyVideos');
+  const s =
+    getSb();
 
-  if (!container) {
+  if (
+    !$('#historyVideos') ||
+    !s
+  )
     return;
-  }
 
-  const s = getSb();
-  const user =
+  const u =
     await currentUser();
 
-  if (!user) {
-
-    container.innerHTML =
+  if (!u) {
+    $('#historyVideos').innerHTML =
       `
         <div class="notice">
-          Please sign in to view your history.
+          Sign in to see history.
         </div>
       `;
 
     return;
   }
 
-  if (!s) {
-    return;
-  }
-
-  try {
-
-    const {
-      data: history,
-      error
-    } =
-      await s
-        .from('history')
-        .select(
-          'video_id,watched_at'
-        )
-        .eq(
-          'user_id',
-          user.id
-        )
-        .order(
-          'watched_at',
-          {
-            ascending: false
-          }
-        );
-
-    if (error) {
-      throw error;
-    }
-
-    const ids =
-      (history || [])
-        .map(x => x.video_id)
-        .filter(Boolean);
-
-    if (!ids.length) {
-
-      container.innerHTML =
-        `
-          <div class="notice">
-            No watch history yet.
-          </div>
-        `;
-
-      return;
-    }
-
-    const {
-      data: videos,
-      error: videoError
-    } =
-      await s
-        .from('videos')
-        .select(
-          `
-            *,
-            profiles(username,avatar_url)
-          `
-        )
-        .in(
-          'id',
-          ids
-        );
-
-    if (videoError) {
-      throw videoError;
-    }
-
-    const byId =
-      new Map(
-        (videos || [])
-          .map(v => [
-            String(v.id),
-            v
-          ])
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('watch_history')
+      .select(
+        'watched_at,videos(*,profiles(username))'
+      )
+      .eq(
+        'user_id',
+        u.id
+      )
+      .order(
+        'watched_at',
+        {
+          ascending: false
+        }
       );
 
-    const ordered =
-      ids
-        .map(id =>
-          byId.get(
-            String(id)
-          )
-        )
-        .filter(Boolean);
-
-    container.innerHTML =
-      ordered
-        .map(card)
-        .join('');
-
-  } catch (error) {
-
-    console.error(
-      'History error:',
-      error
-    );
-
-    container.innerHTML =
+  if (error) {
+    $('#historyVideos').innerHTML =
       `
         <div class="notice">
-          ${esc(
-            error.message ||
-            'Could not load history.'
-          )}
+          ${esc(error.message)}
         </div>
       `;
+
+    return;
   }
+
+  $('#historyVideos')
+    .innerHTML =
+      (data || [])
+        .map(
+          x =>
+            x.videos
+        )
+        .filter(Boolean)
+        .map(card)
+        .join('') ||
+      `
+        <div class="notice">
+          No history yet.
+        </div>
+      `;
 }
 
-
-/* =========================================================
-   STUDIO PAGE
-   ========================================================= */
+/* =========================================
+   STUDIO
+========================================= */
 
 async function studioPage() {
-  const container =
-    $('#studioVideos');
+  const s =
+    getSb();
 
-  if (!container) {
+  if (
+    !$('#studioStats') ||
+    !s
+  )
     return;
-  }
 
-  const s = getSb();
-  const user =
+  const u =
     await currentUser();
 
-  if (!user) {
-
-    container.innerHTML =
+  if (!u) {
+    $('#studioStats').innerHTML =
       `
         <div class="notice">
-          Please sign in to use Studio.
+          Sign in to open Studio.
         </div>
       `;
 
     return;
   }
 
-  if (!s) {
+  const {
+    data,
+    error
+  } =
+    await s
+      .from('videos')
+      .select(
+        'id,title,views,created_at'
+      )
+      .eq(
+        'owner_id',
+        u.id
+      )
+      .order(
+        'views',
+        {
+          ascending: false
+        }
+      );
+
+  if (error) {
+    $('#studioStats').innerHTML =
+      `
+        <div class="notice">
+          ${esc(error.message)}
+        </div>
+      `;
+
     return;
   }
 
-  try {
+  const v =
+    data || [];
 
-    const {
-      data: videos,
-      error
-    } =
-      await s
-        .from('videos')
-        .select(
-          `
-            *,
-            profiles(username,avatar_url)
-          `
-        )
-        .eq(
-          'owner_id',
-          user.id
-        )
-        .order(
-          'created_at',
-          {
-            ascending: false
-          }
-        );
-
-    if (error) {
-      throw error;
-    }
-
-    if (!videos?.length) {
-
-      container.innerHTML =
-        `
-          <div class="notice">
-            You have not published any videos yet.
-          </div>
-        `;
-
-      return;
-    }
-
-    container.innerHTML =
-      videos
-        .map(card)
-        .join('');
-
-  } catch (error) {
-
-    console.error(
-      'Studio error:',
-      error
+  const total =
+    v.reduce(
+      (a, x) =>
+        a +
+        Number(
+          x.views || 0
+        ),
+      0
     );
 
-    container.innerHTML =
+  $('#studioStats')
+    .innerHTML =
       `
-        <div class="notice">
-          ${esc(
-            error.message ||
-            'Could not load Studio.'
-          )}
+        <div class="statGrid">
+
+          <div class="statCard">
+            <strong>
+              ${fmt(v.length)}
+            </strong>
+
+            <span>
+              Videos
+            </span>
+          </div>
+
+          <div class="statCard">
+            <strong>
+              ${fmt(total)}
+            </strong>
+
+            <span>
+              Total views
+            </span>
+          </div>
+
+          <div class="statCard">
+            <strong>
+              ${fmt(v[0]?.views || 0)}
+            </strong>
+
+            <span>
+              Top video views
+            </span>
+          </div>
+
+        </div>
+
+        <div class="panel">
+
+          <h2>
+            Top videos
+          </h2>
+
+          ${
+            v
+              .slice(0, 10)
+              .map(
+                (x, i) =>
+                  `
+                    <a
+                      class="studioRow"
+                      href="watch.html?id=${encodeURIComponent(x.id)}"
+                    >
+
+                      <span>
+                        #${i + 1}
+                      </span>
+
+                      <span>
+                        ${esc(x.title)}
+                      </span>
+
+                      <b>
+                        ${fmt(x.views)} views
+                      </b>
+
+                    </a>
+                  `
+              )
+              .join('') ||
+            `
+              <p class="muted">
+                Upload your first video.
+              </p>
+            `
+          }
+
         </div>
       `;
-  }
 }
 
-
-/* =========================================================
-   CHIPS / CATEGORY FILTERS
-   ========================================================= */
+/* =========================================
+   CATEGORY CHIPS
+========================================= */
 
 function initChips() {
-  const chips =
-    document.querySelectorAll(
-      '[data-category]'
-    );
-
-  if (!chips.length) {
-    return;
-  }
-
-  chips.forEach(
-    chip => {
-
-      chip.addEventListener(
-        'click',
-        async () => {
-
-          chips.forEach(
-            x =>
-              x.classList.remove(
-                'active'
+  document
+    .querySelectorAll(
+      '.chip'
+    )
+    .forEach(
+      b => {
+        b.onclick =
+          () => {
+            document
+              .querySelectorAll(
+                '.chip'
               )
-          );
+              .forEach(
+                x =>
+                  x.classList.remove(
+                    'active'
+                  )
+              );
 
-          chip.classList.add(
-            'active'
-          );
+            b.classList.add(
+              'active'
+            );
 
-          const category =
-            chip.dataset.category ||
-            '';
-
-          const container =
-            $('#videos') ||
-            $('#videoGrid') ||
-            $('#homeVideos');
-
-          if (!container) {
-            return;
-          }
-
-          await loadVideos(
-            container,
-            {
-              category,
-              youtube: true
-            }
-          );
-        }
-      );
-    }
-  );
+            loadVideos(
+              '#videoGrid',
+              '',
+              40,
+              b.dataset.category ||
+                ''
+            );
+          };
+      }
+    );
 }
 
-
-/* =========================================================
+/* =========================================
    SEARCH
-   ========================================================= */
+========================================= */
 
 function searchGo() {
-  const input =
-    $('#searchInput');
+  const q =
+    $('#topSearch')
+      ?.value
+      .trim();
 
-  const button =
-    $('#searchBtn');
-
-  if (!input) {
-    return;
+  if (q) {
+    location.href =
+      'search.html?q=' +
+      encodeURIComponent(q);
   }
+}
 
-  async function go() {
+/* =========================================
+   INIT
+========================================= */
 
-    const q =
-      input.value.trim();
+async function init() {
+  await header();
 
-    if (!q) {
-      return;
-    }
+  const m =
+    $('#menuBtn');
 
-    const container =
-      $('#searchResults') ||
-      $('#videos') ||
-      $('#videoGrid');
+  const side =
+    $('.side');
 
-    if (
-      container &&
-      location.pathname.endsWith(
-        'search.html'
-      )
-    ) {
+  if (
+    m &&
+    side
+  ) {
+    m.onclick =
+      e => {
+        e.stopPropagation();
 
-      const params =
-        new URLSearchParams(
-          location.search
+        side.classList.toggle(
+          'open'
         );
+      };
 
-      params.set(
-        'q',
-        q
-      );
-
-      history.replaceState(
-        null,
-        '',
-        `search.html?${params}`
-      );
-
-      await loadVideos(
-        container,
-        {
-          title: q,
-          youtube: true
+    side
+      .querySelectorAll(
+        'a'
+      )
+      .forEach(
+        a => {
+          a.onclick =
+            () =>
+              side.classList.remove(
+                'open'
+              );
         }
       );
 
-      return;
-    }
-
-    location.href =
-      `search.html?q=${encodeURIComponent(q)}`;
-  }
-
-  input.addEventListener(
-    'keydown',
-    e => {
-
-      if (
-        e.key === 'Enter'
-      ) {
-        e.preventDefault();
-        go();
-      }
-    }
-  );
-
-  if (button) {
-    button.addEventListener(
+    document.addEventListener(
       'click',
       e => {
-        e.preventDefault();
-        go();
+        if (
+          side.classList.contains(
+            'open'
+          ) &&
+          !side.contains(
+            e.target
+          ) &&
+          !m.contains(
+            e.target
+          )
+        ) {
+          side.classList.remove(
+            'open'
+          );
+        }
       }
     );
   }
 
-  const form =
-    input.closest('form');
+  $('#searchBtn')
+    ?.addEventListener(
+      'click',
+      searchGo
+    );
 
-  if (form) {
-    form.addEventListener(
-      'submit',
+  $('#topSearch')
+    ?.addEventListener(
+      'keydown',
       e => {
-        e.preventDefault();
-        go();
+        if (
+          e.key ===
+          'Enter'
+        ) {
+          e.preventDefault();
+          searchGo();
+        }
       }
     );
-  }
-}
 
-
-/* =========================================================
-   MOBILE MENU
-   ========================================================= */
-
-function initMobileMenu() {
-  const button =
-    $('#menuBtn') ||
-    $('#mobileMenuBtn');
-
-  const menu =
-    $('#mobileMenu') ||
-    $('.mobileMenu');
-
-  if (!button || !menu) {
-    return;
-  }
-
-  button.addEventListener(
-    'click',
-    () => {
-
-      menu.classList.toggle(
-        'open'
-      );
-
-      button.setAttribute(
-        'aria-expanded',
-        menu.classList.contains(
-          'open'
-        )
-          ? 'true'
-          : 'false'
-      );
-    }
-  );
-
-  menu
-    .querySelectorAll('a')
-    .forEach(
-      link => {
-
-        link.addEventListener(
-          'click',
-          () => {
-            menu.classList.remove(
-              'open'
-            );
-          }
-        );
-      }
-    );
-}
-
-
-/* =========================================================
-   INIT
-   ========================================================= */
-
-async function init() {
-
-  try {
-    await header();
-  } catch (error) {
-    console.error(
-      'Header init error:',
-      error
-    );
-  }
-
-  initMobileMenu();
-
-  searchGo();
-
-  initChips();
-
-  const themeBtn =
-    $('#themeBtn') ||
-    $('#themeToggle');
-
-  if (themeBtn) {
-    themeBtn.addEventListener(
+  $('#themeBtn')
+    ?.addEventListener(
       'click',
       toggleTheme
     );
-  }
 
-  try {
-    await authPage();
-  } catch (error) {
-    console.error(
-      'Auth page init error:',
-      error
+  $('#mobileSearchBtn')
+    ?.addEventListener(
+      'click',
+      () =>
+        $('#searchPanel')
+          ?.classList.toggle(
+            'show'
+          )
+    );
+
+  authPage();
+
+  uploadPage();
+
+  watchPage();
+
+  channelPage();
+
+  subscriptionsPage();
+
+  libraryPage();
+
+  historyPage();
+
+  studioPage();
+
+  /* HOME */
+
+  if ($('#videoGrid')) {
+    loadVideos(
+      '#videoGrid'
     );
   }
 
-  try {
-    await uploadPage();
-  } catch (error) {
-    console.error(
-      'Upload page init error:',
-      error
-    );
-  }
+  /* SEARCH PAGE */
 
-  try {
-    await watchPage();
-  } catch (error) {
-    console.error(
-      'Watch page init error:',
-      error
-    );
-  }
-
-  try {
-    await channelPage();
-  } catch (error) {
-    console.error(
-      'Channel page init error:',
-      error
-    );
-  }
-
-  try {
-    await subscriptionsPage();
-  } catch (error) {
-    console.error(
-      'Subscriptions page init error:',
-      error
-    );
-  }
-
-  try {
-    await libraryPage();
-  } catch (error) {
-    console.error(
-      'Library page init error:',
-      error
-    );
-  }
-
-  try {
-    await historyPage();
-  } catch (error) {
-    console.error(
-      'History page init error:',
-      error
-    );
-  }
-
-  try {
-    await studioPage();
-  } catch (error) {
-    console.error(
-      'Studio page init error:',
-      error
-    );
-  }
-
-  /* -------------------------------------------------------
-     HOME
-     ------------------------------------------------------- */
-
-  const homeVideos =
-    $('#homeVideos') ||
-    $('#videos') ||
-    (
-      location.pathname.endsWith(
-        'index.html'
-      )
-        ? $('#videoGrid')
-        : null
-    );
-
-  if (homeVideos) {
-
-    await loadVideos(
-      homeVideos,
-      {
-        youtube: true
-      }
-    );
-  }
-
-  /* -------------------------------------------------------
-     SEARCH PAGE
-     ------------------------------------------------------- */
-
-  const searchResults =
-    $('#searchResults');
-
-  if (searchResults) {
-
-    const params =
+  if ($('#allVideos')) {
+    const q =
       new URLSearchParams(
         location.search
-      );
-
-    const q =
-      params.get('q') ||
+      ).get('q') ||
       '';
 
-    const input =
-      $('#searchInput');
-
-    if (
-      input &&
-      q
-    ) {
-      input.value =
-        q;
+    if ($('#query')) {
+      $('#query')
+        .textContent =
+          q
+            ? `Search results for “${q}”`
+            : 'Search';
     }
 
-    await loadVideos(
-      searchResults,
-      {
-        title: q,
-        youtube: true
-      }
+    loadVideos(
+      '#allVideos',
+      q,
+      40
     );
   }
 
-  /* -------------------------------------------------------
-     TRENDING
-     ------------------------------------------------------- */
+  /* TRENDING */
 
-  if (
-    $('#trendingVideos')
-  ) {
-    await loadTrending();
+  if ($('#trending')) {
+    loadTrending();
   }
+
+  initChips();
 }
 
+/* =========================================
+   START
+========================================= */
 
-/* =========================================================
-   DOM READY
-   ========================================================= */
+document.addEventListener(
+  'DOMContentLoaded',
+  init
+);
 
-if (
-  document.readyState ===
-  'loading'
-) {
-
-  document.addEventListener(
-    'DOMContentLoaded',
-    init
-  );
-
-} else {
-
-  init();
-}
-
-
-/* =========================================================
+/* =========================================
    MINI PLAYER
-   ========================================================= */
+========================================= */
 
-(function initMiniPlayer() {
-
-  let mini =
-    $('#divineMiniPlayer');
-
-  let lastScroll =
-    window.scrollY;
-
-  let ticking = false;
-
-  function update() {
-
-    ticking = false;
-
-    const current =
-      window.scrollY;
-
-    const player =
+document.addEventListener(
+  'scroll',
+  () => {
+    const video =
       document.querySelector(
         '.playerInner'
       );
 
-    if (!player) {
+    if (
+      !video ||
+      video.paused ||
+      video.currentTime <
+        1
+    ) {
       return;
     }
 
-    const rect =
-      player.getBoundingClientRect();
+    const nearTop =
+      video
+        .getBoundingClientRect()
+        .bottom < 0;
 
-    if (
-      rect.bottom < 0 &&
-      current > lastScroll
-    ) {
+    let mini =
+      document.getElementById(
+        'divineMiniPlayer'
+      );
 
+    if (nearTop) {
       if (!mini) {
-
         mini =
-          document.createElement(
-            'div'
+          video.cloneNode(
+            true
           );
 
         mini.id =
           'divineMiniPlayer';
 
-        mini.style.position =
-          'fixed';
+        mini.muted =
+          true;
 
-        mini.style.right =
-          '16px';
+        mini.controls =
+          true;
 
-        mini.style.bottom =
-          '16px';
-
-        mini.style.width =
-          '320px';
-
-        mini.style.maxWidth =
-          'calc(100vw - 32px)';
-
-        mini.style.zIndex =
-          '9998';
-
-        mini.style.background =
-          '#000';
-
-        mini.style.borderRadius =
-          '12px';
-
-        mini.style.overflow =
-          'hidden';
-
-        mini.style.boxShadow =
-          '0 10px 40px rgba(0,0,0,.35)';
+        mini.style.cssText =
+          `
+            position:fixed;
+            right:12px;
+            bottom:76px;
+            width:180px;
+            aspect-ratio:16/9;
+            z-index:9999;
+            background:#000;
+            border-radius:12px;
+            box-shadow:0 8px 30px #0008;
+          `;
 
         document.body.appendChild(
           mini
         );
+      }
 
-        const clone =
-          player.cloneNode(
-            true
-          );
-
-        mini.appendChild(
-          clone
+      mini.play()
+        .catch(
+          () => {}
         );
-      }
-
-      mini.style.display =
-        'block';
-
-    } else {
-
-      if (mini) {
-        mini.style.display =
-          'none';
-      }
+    } else if (mini) {
+      mini.remove();
     }
-
-    lastScroll =
-      current;
   }
-
-  window.addEventListener(
-    'scroll',
-    () => {
-
-      if (!ticking) {
-
-        ticking = true;
-
-        requestAnimationFrame(
-          update
-        );
-      }
-    },
-    {
-      passive: true
-    }
-  );
-
-})();
+);
