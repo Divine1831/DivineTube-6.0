@@ -1,1 +1,1130 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Upload | DivineTube</title><link rel="stylesheet" href="css/style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/layout.js" defer></script><script src="js/app.js" defer></script></head><body><div id="app"></div><main class="page"><div class="formPage"><h1>Upload a video</h1><div id="uploadGate"></div><form id="uploadForm" class="formCard"><label>Title<input id="title" maxlength="120" required></label><label>Description<textarea id="desc" rows="6"></textarea></label><label>Category<select id="category"><option>General</option><option>Music</option><option>Gaming</option><option>Education</option><option>Tech</option><option>Sports</option><option>Comedy</option></select></label><label>Video<input id="video" type="file" accept="video/*" required></label><label>Thumbnail<input id="thumb" type="file" accept="image/*"></label><img id="preview" class="preview hidden"><p id="msg" class="notice"></p><button class="btn primary">Publish</button></form></div></main><div id="toast" class="toast"></div></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Upload | DivineTube</title>
+
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/layout.js" defer></script>
+  <script src="js/app.js" defer></script>
+
+  <style>
+    /* ==============================
+       DIVINETUBE UPLOAD STUDIO
+    ============================== */
+
+    .uploadStudio {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding-bottom: 50px;
+    }
+
+    .uploadTop {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .uploadTop h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    .uploadTop p {
+      margin: 6px 0 0;
+      opacity: .7;
+    }
+
+    .uploadLayout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .uploadCard {
+      background: var(--surface, #151d30);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .uploadCardHeader {
+      padding: 20px 22px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .uploadCardHeader h2 {
+      margin: 0;
+      font-size: 19px;
+    }
+
+    .uploadCardHeader p {
+      margin: 5px 0 0;
+      opacity: .65;
+      font-size: 14px;
+    }
+
+    .uploadFields {
+      padding: 22px;
+    }
+
+    .uploadField {
+      margin-bottom: 22px;
+    }
+
+    .uploadField label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .uploadField input,
+    .uploadField textarea,
+    .uploadField select {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .uploadField textarea {
+      resize: vertical;
+      min-height: 130px;
+    }
+
+    /* ==============================
+       THUMBNAIL AREA
+    ============================== */
+
+    .thumbnailBox {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 2px dashed rgba(148,163,184,.45);
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(56,189,248,.08),
+          rgba(129,140,248,.08)
+        );
+      transition: .2s ease;
+    }
+
+    .thumbnailBox.dragging {
+      border-color: #38bdf8;
+      transform: scale(1.01);
+    }
+
+    .thumbnailEmpty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .thumbnailIcon {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(56,189,248,.12);
+      font-size: 27px;
+      margin-bottom: 14px;
+    }
+
+    .thumbnailEmpty strong {
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    .thumbnailEmpty span {
+      font-size: 13px;
+      opacity: .65;
+      max-width: 260px;
+      line-height: 1.5;
+    }
+
+    .thumbnailPreview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .thumbnailActions {
+      display: none;
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      gap: 8px;
+    }
+
+    .thumbnailActions button {
+      flex: 1;
+      border: 0;
+      border-radius: 9px;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      background: rgba(0,0,0,.75);
+      color: white;
+      backdrop-filter: blur(8px);
+    }
+
+    .thumbnailActions button:hover {
+      background: rgba(0,0,0,.9);
+    }
+
+    .thumbnailButton {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+      width: 100%;
+      padding: 12px;
+      border-radius: 9px;
+      border: 1px solid rgba(148,163,184,.3);
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .thumbnailButton:hover {
+      background: rgba(148,163,184,.08);
+    }
+
+    #thumb {
+      display: none;
+    }
+
+    /* ==============================
+       VIDEO PREVIEW
+    ============================== */
+
+    .videoPreviewBox {
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      aspect-ratio: 16 / 9;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .videoPreviewBox video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .videoInfo {
+      display: none;
+      margin-top: 10px;
+      font-size: 13px;
+      opacity: .7;
+      line-height: 1.5;
+    }
+
+    /* ==============================
+       SIDE PREVIEW
+    ============================== */
+
+    .previewCard {
+      position: sticky;
+      top: 80px;
+    }
+
+    .youtubePreview {
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--bg, #0b0f19);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .youtubePreviewImage {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background:
+        linear-gradient(
+          135deg,
+          #1e293b,
+          #0f172a
+        );
+      display: grid;
+      place-items: center;
+      font-size: 40px;
+      color: rgba(255,255,255,.35);
+    }
+
+    .youtubePreviewImage img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .previewDetails {
+      padding: 14px;
+    }
+
+    .previewTitle {
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 7px;
+      word-break: break-word;
+    }
+
+    .previewChannel {
+      font-size: 13px;
+      opacity: .65;
+    }
+
+    /* ==============================
+       PUBLISH BUTTON
+    ============================== */
+
+    .publishArea {
+      padding: 20px 22px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .publishButton {
+      min-width: 150px;
+      padding: 13px 20px;
+      border-radius: 9px;
+      border: 0;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .publishButton:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .uploadMessage {
+      margin: 0 22px 20px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* ==============================
+       MOBILE
+    ============================== */
+
+    @media (max-width: 800px) {
+
+      .uploadStudio {
+        padding: 10px 0 40px;
+      }
+
+      .uploadTop h1 {
+        font-size: 24px;
+      }
+
+      .uploadLayout {
+        grid-template-columns: 1fr;
+      }
+
+      .previewCard {
+        position: static;
+        order: 2;
+      }
+
+      .uploadMain {
+        order: 1;
+      }
+
+      .uploadFields {
+        padding: 18px;
+      }
+
+      .uploadCardHeader {
+        padding: 18px;
+      }
+
+      .publishArea {
+        padding: 18px;
+      }
+
+      .publishButton {
+        width: 100%;
+      }
+
+      .uploadTop {
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 480px) {
+
+      .uploadTop h1 {
+        font-size: 21px;
+      }
+
+      .thumbnailEmpty {
+        padding: 12px;
+      }
+
+      .thumbnailIcon {
+        width: 50px;
+        height: 50px;
+        font-size: 22px;
+      }
+
+      .thumbnailEmpty strong {
+        font-size: 14px;
+      }
+
+      .thumbnailEmpty span {
+        font-size: 12px;
+      }
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <div id="app"></div>
+
+  <main class="page">
+
+    <div class="uploadStudio">
+
+      <!-- TOP -->
+
+      <div class="uploadTop">
+
+        <div>
+          <h1>Upload video</h1>
+
+          <p>
+            Share your video with the DivineTube community.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- LOGIN GATE -->
+
+      <div id="uploadGate"></div>
+
+
+      <!-- MAIN LAYOUT -->
+
+      <form
+        id="uploadForm"
+        class="uploadLayout"
+      >
+
+        <!-- LEFT SIDE -->
+
+        <div class="uploadMain">
+
+          <div class="uploadCard">
+
+            <div class="uploadCardHeader">
+
+              <h2>Video details</h2>
+
+              <p>
+                Add information about your video.
+              </p>
+
+            </div>
+
+
+            <div class="uploadFields">
+
+              <!-- TITLE -->
+
+              <div class="uploadField">
+
+                <label for="title">
+                  Title
+                </label>
+
+                <input
+                  id="title"
+                  maxlength="120"
+                  placeholder="Add a title that describes your video"
+                  required
+                >
+
+              </div>
+
+
+              <!-- DESCRIPTION -->
+
+              <div class="uploadField">
+
+                <label for="desc">
+                  Description
+                </label>
+
+                <textarea
+                  id="desc"
+                  rows="6"
+                  placeholder="Tell viewers about your video"
+                ></textarea>
+
+              </div>
+
+
+              <!-- CATEGORY -->
+
+              <div class="uploadField">
+
+                <label for="category">
+                  Category
+                </label>
+
+                <select id="category">
+
+                  <option>General</option>
+                  <option>Music</option>
+                  <option>Gaming</option>
+                  <option>Education</option>
+                  <option>Tech</option>
+                  <option>Sports</option>
+                  <option>Comedy</option>
+
+                </select>
+
+              </div>
+
+
+              <!-- VIDEO -->
+
+              <div class="uploadField">
+
+                <label for="video">
+                  Video file
+                </label>
+
+                <input
+                  id="video"
+                  type="file"
+                  accept="video/*"
+                  required
+                >
+
+                <div
+                  id="videoPreviewBox"
+                  class="videoPreviewBox"
+                >
+
+                  <video
+                    id="videoPreview"
+                    controls
+                  ></video>
+
+                </div>
+
+                <div
+                  id="videoInfo"
+                  class="videoInfo"
+                ></div>
+
+              </div>
+
+
+              <!-- THUMBNAIL -->
+
+              <div class="uploadField">
+
+                <label>
+                  Thumbnail
+                </label>
+
+                <div
+                  id="thumbnailBox"
+                  class="thumbnailBox"
+                >
+
+                  <!-- EMPTY -->
+
+                  <div
+                    id="thumbnailEmpty"
+                    class="thumbnailEmpty"
+                  >
+
+                    <div class="thumbnailIcon">
+                      🖼️
+                    </div>
+
+                    <strong>
+                      Add a thumbnail
+                    </strong>
+
+                    <span>
+                      Upload an image that represents your video.
+                      Recommended ratio: 16:9.
+                    </span>
+
+                  </div>
+
+
+                  <!-- IMAGE -->
+
+                  <img
+                    id="preview"
+                    class="thumbnailPreview"
+                    alt="Thumbnail preview"
+                  >
+
+
+                  <!-- ACTIONS -->
+
+                  <div
+                    id="thumbnailActions"
+                    class="thumbnailActions"
+                  >
+
+                    <button
+                      id="changeThumbnail"
+                      type="button"
+                    >
+                      Change
+                    </button>
+
+                    <button
+                      id="removeThumbnail"
+                      type="button"
+                    >
+                      Remove
+                    </button>
+
+                  </div>
+
+                </div>
+
+
+                <button
+                  id="chooseThumbnail"
+                  class="thumbnailButton"
+                  type="button"
+                >
+                  🖼️ Choose thumbnail
+                </button>
+
+                <input
+                  id="thumb"
+                  type="file"
+                  accept="image/*"
+                >
+
+              </div>
+
+            </div>
+
+
+            <!-- MESSAGE -->
+
+            <p
+              id="msg"
+              class="notice uploadMessage"
+            ></p>
+
+
+            <!-- PUBLISH -->
+
+            <div class="publishArea">
+
+              <button
+                id="publishButton"
+                class="btn primary publishButton"
+                type="submit"
+              >
+                Publish video
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- RIGHT SIDE -->
+
+        <aside class="previewCard">
+
+          <div class="uploadCard">
+
+            <div class="uploadCardHeader">
+
+              <h2>Preview</h2>
+
+              <p>
+                This is how your video may appear.
+              </p>
+
+            </div>
+
+            <div style="padding:16px;">
+
+              <div class="youtubePreview">
+
+                <div
+                  id="youtubePreviewImage"
+                  class="youtubePreviewImage"
+                >
+
+                  ▶
+
+                  <img
+                    id="youtubePreviewImg"
+                    alt="Video thumbnail"
+                  >
+
+                </div>
+
+                <div class="previewDetails">
+
+                  <div
+                    id="previewTitle"
+                    class="previewTitle"
+                  >
+                    Your video title
+                  </div>
+
+                  <div class="previewChannel">
+                    DivineTube creator
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </aside>
+
+      </form>
+
+    </div>
+
+  </main>
+
+
+  <div
+    id="toast"
+    class="toast"
+  ></div>
+
+
+  <!-- ==============================
+       UPLOAD PAGE JAVASCRIPT
+  ============================== -->
+
+  <script>
+
+    const thumbInput =
+      document.getElementById('thumb');
+
+    const chooseThumbnail =
+      document.getElementById('chooseThumbnail');
+
+    const changeThumbnail =
+      document.getElementById('changeThumbnail');
+
+    const removeThumbnail =
+      document.getElementById('removeThumbnail');
+
+    const thumbnailBox =
+      document.getElementById('thumbnailBox');
+
+    const thumbnailEmpty =
+      document.getElementById('thumbnailEmpty');
+
+    const thumbnailPreview =
+      document.getElementById('preview');
+
+    const thumbnailActions =
+      document.getElementById('thumbnailActions');
+
+    const previewImg =
+      document.getElementById('youtubePreviewImg');
+
+    const previewImageBox =
+      document.getElementById('youtubePreviewImage');
+
+    const titleInput =
+      document.getElementById('title');
+
+    const previewTitle =
+      document.getElementById('previewTitle');
+
+    const videoInput =
+      document.getElementById('video');
+
+    const videoPreviewBox =
+      document.getElementById('videoPreviewBox');
+
+    const videoPreview =
+      document.getElementById('videoPreview');
+
+    const videoInfo =
+      document.getElementById('videoInfo');
+
+
+    /* ==============================
+       OPEN THUMBNAIL PICKER
+    ============================== */
+
+    function openThumbnailPicker() {
+      thumbInput.click();
+    }
+
+    chooseThumbnail.addEventListener(
+      'click',
+      openThumbnailPicker
+    );
+
+    changeThumbnail.addEventListener(
+      'click',
+      openThumbnailPicker
+    );
+
+
+    /* ==============================
+       THUMBNAIL PREVIEW
+    ============================== */
+
+    thumbInput.addEventListener(
+      'change',
+      () => {
+
+        const file =
+          thumbInput.files?.[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+          alert('Please choose an image file.');
+          thumbInput.value = '';
+          return;
+        }
+
+        const url =
+          URL.createObjectURL(file);
+
+        thumbnailPreview.src = url;
+        thumbnailPreview.style.display = 'block';
+
+        thumbnailEmpty.style.display = 'none';
+        thumbnailActions.style.display = 'flex';
+
+        /* right-side preview */
+
+        previewImg.src = url;
+        previewImg.style.display = 'block';
+
+        previewImageBox.childNodes.forEach?.(() => {});
+
+      }
+    );
+
+
+    /* ==============================
+       REMOVE THUMBNAIL
+    ============================== */
+
+    removeThumbnail.addEventListener(
+      'click',
+      () => {
+
+        thumbInput.value = '';
+
+        thumbnailPreview.removeAttribute('src');
+
+        thumbnailPreview.style.display =
+          'none';
+
+        thumbnailEmpty.style.display =
+          'flex';
+
+        thumbnailActions.style.display =
+          'none';
+
+        previewImg.removeAttribute('src');
+
+        previewImg.style.display =
+          'none';
+
+      }
+    );
+
+
+    /* ==============================
+       DRAG & DROP
+    ============================== */
+
+    [
+      'dragenter',
+      'dragover'
+    ].forEach(eventName => {
+
+      thumbnailBox.addEventListener(
+        eventName,
+        e => {
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          thumbnailBox.classList.add(
+            'dragging'
+          );
+
+        }
+      );
+
+    });
+
+
+    [
+      'dragleave',
+      'drop'
+    ].forEach(eventName => {
+
+      thumbnailBox.addEventListener(
+        eventName,
+        e => {
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          thumbnailBox.classList.remove(
+            'dragging'
+          );
+
+        }
+      );
+
+    });
+
+
+    thumbnailBox.addEventListener(
+      'drop',
+      e => {
+
+        const file =
+          e.dataTransfer.files?.[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+          alert('Please drop an image file.');
+          return;
+        }
+
+        try {
+
+          const dataTransfer =
+            new DataTransfer();
+
+          dataTransfer.items.add(file);
+
+          thumbInput.files =
+            dataTransfer.files;
+
+          thumbInput.dispatchEvent(
+            new Event(
+              'change',
+              { bubbles: true }
+            )
+          );
+
+        } catch (error) {
+
+          console.error(
+            'Thumbnail drop error:',
+            error
+          );
+
+        }
+
+      }
+    );
+
+
+    /* ==============================
+       CLICK EMPTY THUMBNAIL
+    ============================== */
+
+    thumbnailBox.addEventListener(
+      'click',
+      e => {
+
+        if (
+          e.target === thumbnailBox ||
+          e.target.closest(
+            '#thumbnailEmpty'
+          )
+        ) {
+
+          openThumbnailPicker();
+
+        }
+
+      }
+    );
+
+
+    /* ==============================
+       TITLE PREVIEW
+    ============================== */
+
+    titleInput.addEventListener(
+      'input',
+      () => {
+
+        const text =
+          titleInput.value.trim();
+
+        previewTitle.textContent =
+          text ||
+          'Your video title';
+
+      }
+    );
+
+
+    /* ==============================
+       VIDEO PREVIEW
+    ============================== */
+
+    videoInput.addEventListener(
+      'change',
+      () => {
+
+        const file =
+          videoInput.files?.[0];
+
+        if (!file) {
+
+          videoPreviewBox.style.display =
+            'none';
+
+          videoInfo.style.display =
+            'none';
+
+          return;
+
+        }
+
+        if (!file.type.startsWith('video/')) {
+          return;
+        }
+
+        const url =
+          URL.createObjectURL(file);
+
+        videoPreview.src = url;
+
+        videoPreviewBox.style.display =
+          'block';
+
+        videoInfo.textContent =
+          `${file.name} • ${formatFileSize(file.size)}`;
+
+        videoInfo.style.display =
+          'block';
+
+      }
+    );
+
+
+    /* ==============================
+       FILE SIZE
+    ============================== */
+
+    function formatFileSize(bytes) {
+
+      if (bytes < 1024 * 1024) {
+
+        return (
+          (bytes / 1024).toFixed(1) +
+          ' KB'
+        );
+
+      }
+
+      if (bytes < 1024 * 1024 * 1024) {
+
+        return (
+          (bytes / (1024 * 1024)).toFixed(1) +
+          ' MB'
+        );
+
+      }
+
+      return (
+        (bytes / (1024 * 1024 * 1024)).toFixed(2) +
+        ' GB'
+      );
+
+    }
+
+
+    /* ==============================
+       PUBLISH BUTTON
+    ============================== */
+
+    document
+      .getElementById('uploadForm')
+      .addEventListener(
+        'submit',
+        () => {
+
+          const button =
+            document.getElementById(
+              'publishButton'
+            );
+
+          button.disabled = true;
+
+          button.textContent =
+            'Publishing…';
+
+        }
+      );
+
+  </script>
+
+</body>
+</html>
