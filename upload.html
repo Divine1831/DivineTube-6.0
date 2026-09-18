@@ -22,35 +22,27 @@
 
     .uploadStudio {
       width: 100%;
-      max-width: 1100px;
+      max-width: 1150px;
       margin: 0 auto;
-      padding: 20px 0 60px;
+      padding: 30px 20px 70px;
       box-sizing: border-box;
     }
 
     .uploadPageHeader {
       width: 100%;
-      margin: 0 0 28px;
-      padding: 0;
-      display: block !important;
-      box-sizing: border-box;
+      margin-bottom: 28px;
     }
 
     .uploadPageHeader h1 {
-      margin: 0 0 7px !important;
-      padding: 0 !important;
-      font-size: 30px !important;
-      line-height: 1.2 !important;
-      width: 100% !important;
-      display: block !important;
+      margin: 0 0 8px;
+      font-size: 32px;
+      line-height: 1.2;
     }
 
     .uploadPageHeader p {
-      margin: 0 !important;
-      padding: 0 !important;
+      margin: 0;
       font-size: 15px;
-      opacity: .7;
-      line-height: 1.5;
+      opacity: .65;
     }
 
 
@@ -62,7 +54,7 @@
       width: 100%;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 350px;
-      gap: 24px;
+      gap: 25px;
       align-items: start;
     }
 
@@ -73,13 +65,13 @@
     .uploadCard {
       background: var(--surface, #151d30);
       border: 1px solid rgba(255,255,255,.08);
-      border-radius: 16px;
+      border-radius: 17px;
       overflow: hidden;
       box-sizing: border-box;
     }
 
     .uploadCardHeader {
-      padding: 20px 22px;
+      padding: 21px 24px;
       border-bottom: 1px solid rgba(255,255,255,.08);
     }
 
@@ -91,26 +83,26 @@
     .uploadCardHeader p {
       margin: 6px 0 0;
       font-size: 14px;
-      opacity: .65;
+      opacity: .6;
     }
 
     .uploadFields {
-      padding: 22px;
+      padding: 25px;
     }
 
 
     /* =================================
-       FORM
+       FORM FIELDS
     ================================= */
 
     .uploadField {
-      margin-bottom: 23px;
+      margin-bottom: 25px;
     }
 
     .uploadField > label {
       display: block;
       font-weight: 600;
-      margin-bottom: 8px;
+      margin-bottom: 9px;
     }
 
     .uploadField input,
@@ -122,7 +114,104 @@
 
     .uploadField textarea {
       resize: vertical;
-      min-height: 130px;
+      min-height: 140px;
+    }
+
+
+    /* =================================
+       LARGE VIDEO UPLOAD BOX
+    ================================= */
+
+    .videoUploadBox {
+      position: relative;
+      width: 100%;
+      min-height: 300px;
+      border: 2px dashed rgba(148,163,184,.4);
+      border-radius: 16px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(56,189,248,.06),
+          rgba(129,140,248,.06)
+        );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      overflow: hidden;
+      box-sizing: border-box;
+      transition: .2s ease;
+    }
+
+    .videoUploadBox:hover {
+      border-color: rgba(56,189,248,.75);
+      background:
+        linear-gradient(
+          135deg,
+          rgba(56,189,248,.10),
+          rgba(129,140,248,.10)
+        );
+    }
+
+    .videoUploadBox.dragging {
+      border-color: #38bdf8;
+      transform: scale(1.01);
+    }
+
+    .videoUploadEmpty {
+      padding: 35px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .videoUploadIcon {
+      width: 76px;
+      height: 76px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(56,189,248,.12);
+      font-size: 35px;
+      margin-bottom: 17px;
+    }
+
+    .videoUploadEmpty h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .videoUploadEmpty p {
+      margin: 0 0 18px;
+      max-width: 430px;
+      font-size: 14px;
+      line-height: 1.6;
+      opacity: .6;
+    }
+
+    .selectVideoButton {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 23px;
+      border: 0;
+      border-radius: 9px;
+      background: var(--accent, #38bdf8);
+      color: #06111c;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .selectVideoButton:hover {
+      opacity: .9;
+    }
+
+    #video {
+      display: none;
     }
 
 
@@ -134,10 +223,10 @@
       display: none;
       width: 100%;
       aspect-ratio: 16 / 9;
-      margin-top: 12px;
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
       background: #000;
+      margin-top: 14px;
     }
 
     .videoPreviewBox video {
@@ -149,9 +238,29 @@
 
     .videoInfo {
       display: none;
-      margin-top: 8px;
+      margin-top: 9px;
       font-size: 13px;
-      opacity: .65;
+      opacity: .6;
+    }
+
+    .videoSelectedActions {
+      display: none;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .videoSelectedActions button {
+      padding: 10px 15px;
+      border-radius: 9px;
+      border: 1px solid rgba(148,163,184,.3);
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .videoSelectedActions button:hover {
+      background: rgba(148,163,184,.08);
     }
 
 
@@ -345,7 +454,7 @@
 
     .uploadProgress {
       display: none;
-      margin: 0 22px 20px;
+      margin: 0 25px 20px;
       padding: 15px;
       border-radius: 10px;
       background: rgba(56,189,248,.07);
@@ -388,13 +497,13 @@
     .publishArea {
       display: flex;
       justify-content: flex-end;
-      padding: 20px 22px;
+      padding: 20px 25px;
       border-top: 1px solid rgba(255,255,255,.08);
     }
 
     .publishButton {
-      min-width: 160px;
-      padding: 13px 20px;
+      min-width: 170px;
+      padding: 14px 22px;
       border: 0;
       border-radius: 9px;
       cursor: pointer;
@@ -408,7 +517,7 @@
     }
 
     .uploadMessage {
-      margin: 0 22px 20px;
+      margin: 0 25px 20px;
     }
 
 
@@ -450,11 +559,11 @@
     @media (max-width: 800px) {
 
       .uploadStudio {
-        padding: 15px 0 45px;
+        padding: 20px 14px 45px;
       }
 
       .uploadPageHeader h1 {
-        font-size: 24px !important;
+        font-size: 25px;
       }
 
       .uploadPageHeader p {
@@ -482,8 +591,28 @@
         padding: 18px;
       }
 
+      .videoUploadBox {
+        min-height: 260px;
+      }
+
+      .videoUploadIcon {
+        width: 65px;
+        height: 65px;
+        font-size: 30px;
+      }
+
       .publishArea {
         padding: 18px;
+      }
+
+      .uploadMessage {
+        margin-left: 18px;
+        margin-right: 18px;
+      }
+
+      .uploadProgress {
+        margin-left: 18px;
+        margin-right: 18px;
       }
 
       .publishButton {
@@ -495,8 +624,29 @@
 
     @media (max-width: 480px) {
 
+      .uploadStudio {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
       .uploadPageHeader h1 {
-        font-size: 22px !important;
+        font-size: 22px;
+      }
+
+      .videoUploadBox {
+        min-height: 230px;
+      }
+
+      .videoUploadEmpty {
+        padding: 25px 15px;
+      }
+
+      .videoUploadEmpty h3 {
+        font-size: 18px;
+      }
+
+      .videoUploadEmpty p {
+        font-size: 13px;
       }
 
       .thumbnailIcon {
@@ -537,9 +687,7 @@
 
       <div class="uploadPageHeader">
 
-        <h1>
-          Upload video
-        </h1>
+        <h1>Upload video</h1>
 
         <p>
           Share your video with the DivineTube community.
@@ -561,7 +709,9 @@
       >
 
 
-        <!-- LEFT -->
+        <!-- =================================
+             LEFT SIDE
+        ================================= -->
 
         <div class="uploadMain">
 
@@ -570,9 +720,7 @@
 
             <div class="uploadCardHeader">
 
-              <h2>
-                Video details
-              </h2>
+              <h2>Video details</h2>
 
               <p>
                 Add information about your video.
@@ -643,13 +791,54 @@
               </div>
 
 
-              <!-- VIDEO -->
+              <!-- =================================
+                   VIDEO UPLOAD
+              ================================= -->
 
               <div class="uploadField">
 
-                <label for="video">
+                <label>
                   Video file
                 </label>
+
+
+                <div
+                  id="videoUploadBox"
+                  class="videoUploadBox"
+                >
+
+                  <div
+                    id="videoUploadEmpty"
+                    class="videoUploadEmpty"
+                  >
+
+                    <div class="videoUploadIcon">
+                      📹
+                    </div>
+
+                    <h3>
+                      Upload your video
+                    </h3>
+
+                    <p>
+                      Drag and drop your video here,
+                      or select a video from your device.
+                    </p>
+
+                    <button
+                      id="selectVideoButton"
+                      type="button"
+                      class="selectVideoButton"
+                    >
+                      📁 Select video
+                    </button>
+
+                  </div>
+
+                </div>
+
+
+                <!-- KEEP ORIGINAL ID FOR app.js -->
 
                 <input
                   id="video"
@@ -658,6 +847,8 @@
                   required
                 >
 
+
+                <!-- VIDEO PREVIEW -->
 
                 <div
                   id="videoPreviewBox"
@@ -677,10 +868,34 @@
                   class="videoInfo"
                 ></div>
 
+
+                <div
+                  id="videoSelectedActions"
+                  class="videoSelectedActions"
+                >
+
+                  <button
+                    id="changeVideo"
+                    type="button"
+                  >
+                    Change video
+                  </button>
+
+                  <button
+                    id="removeVideo"
+                    type="button"
+                  >
+                    Remove
+                  </button>
+
+                </div>
+
               </div>
 
 
-              <!-- THUMBNAIL -->
+              <!-- =================================
+                   THUMBNAIL
+              ================================= -->
 
               <div class="uploadField">
 
@@ -693,9 +908,6 @@
                   id="thumbnailBox"
                   class="thumbnailBox"
                 >
-
-
-                  <!-- EMPTY -->
 
                   <div
                     id="thumbnailEmpty"
@@ -711,14 +923,12 @@
                     </strong>
 
                     <span>
-                      Upload an image that represents your video.
-                      A 16:9 image works best.
+                      Upload an image that represents your
+                      video. A 16:9 image works best.
                     </span>
 
                   </div>
 
-
-                  <!-- PREVIEW -->
 
                   <img
                     id="preview"
@@ -726,8 +936,6 @@
                     alt="Thumbnail preview"
                   >
 
-
-                  <!-- ACTION BUTTONS -->
 
                   <div
                     id="thumbnailActions"
@@ -773,7 +981,9 @@
             </div>
 
 
-            <!-- PROGRESS -->
+            <!-- =================================
+                 PROGRESS
+            ================================= -->
 
             <div
               id="uploadProgress"
@@ -858,12 +1068,13 @@
         </div>
 
 
-        <!-- RIGHT -->
+        <!-- =================================
+             RIGHT SIDE PREVIEW
+        ================================= -->
 
         <aside class="previewCard">
 
           <div class="uploadCard">
-
 
             <div class="uploadCardHeader">
 
@@ -881,7 +1092,6 @@
             <div style="padding:16px;">
 
               <div class="youtubePreview">
-
 
                 <div
                   id="youtubePreviewImage"
@@ -983,6 +1193,15 @@
     const videoInput =
       document.getElementById('video');
 
+    const videoUploadBox =
+      document.getElementById('videoUploadBox');
+
+    const videoUploadEmpty =
+      document.getElementById('videoUploadEmpty');
+
+    const selectVideoButton =
+      document.getElementById('selectVideoButton');
+
     const videoPreviewBox =
       document.getElementById('videoPreviewBox');
 
@@ -992,11 +1211,317 @@
     const videoInfo =
       document.getElementById('videoInfo');
 
+    const videoSelectedActions =
+      document.getElementById(
+        'videoSelectedActions'
+      );
+
+    const changeVideo =
+      document.getElementById('changeVideo');
+
+    const removeVideo =
+      document.getElementById('removeVideo');
+
     const uploadForm =
       document.getElementById('uploadForm');
 
     const publishButton =
       document.getElementById('publishButton');
+
+
+    /* =================================
+       VIDEO PICKER
+    ================================= */
+
+    function openVideoPicker() {
+      videoInput.click();
+    }
+
+
+    selectVideoButton.addEventListener(
+      'click',
+      e => {
+        e.preventDefault();
+        e.stopPropagation();
+        openVideoPicker();
+      }
+    );
+
+
+    videoUploadBox.addEventListener(
+      'click',
+      e => {
+
+        if (
+          e.target.closest(
+            '#selectVideoButton'
+          )
+        ) {
+          return;
+        }
+
+        openVideoPicker();
+
+      }
+    );
+
+
+    changeVideo.addEventListener(
+      'click',
+      e => {
+
+        e.preventDefault();
+
+        openVideoPicker();
+
+      }
+    );
+
+
+    /* =================================
+       VIDEO CHANGE
+    ================================= */
+
+    videoInput.addEventListener(
+      'change',
+      () => {
+
+        const file =
+          videoInput.files?.[0];
+
+        if (!file) return;
+
+
+        if (!file.type.startsWith('video/')) {
+
+          alert(
+            'Please choose a video file.'
+          );
+
+          videoInput.value = '';
+
+          return;
+
+        }
+
+
+        const url =
+          URL.createObjectURL(file);
+
+
+        videoPreview.src =
+          url;
+
+        videoPreviewBox.style.display =
+          'block';
+
+
+        videoInfo.textContent =
+          file.name +
+          ' • ' +
+          formatFileSize(file.size);
+
+        videoInfo.style.display =
+          'block';
+
+
+        videoSelectedActions.style.display =
+          'flex';
+
+
+        /*
+          Hide the large empty uploader
+          once a video has been selected.
+        */
+
+        videoUploadEmpty.style.display =
+          'none';
+
+
+        videoUploadBox.style.minHeight =
+          '0';
+
+        videoUploadBox.style.border =
+          '0';
+
+        videoUploadBox.style.background =
+          'transparent';
+
+
+        /*
+          Automatically use the first
+          video frame as a visual preview
+          if no custom thumbnail exists.
+        */
+
+        videoPreview.addEventListener(
+          'loadedmetadata',
+          () => {
+
+            videoPreview.currentTime =
+              Math.min(
+                1,
+                videoPreview.duration || 1
+              );
+
+          },
+          {
+            once: true
+          }
+        );
+
+      }
+    );
+
+
+    /* =================================
+       VIDEO DRAG & DROP
+    ================================= */
+
+    [
+      'dragenter',
+      'dragover'
+    ].forEach(
+      eventName => {
+
+        videoUploadBox.addEventListener(
+          eventName,
+          e => {
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            videoUploadBox.classList.add(
+              'dragging'
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+    [
+      'dragleave',
+      'drop'
+    ].forEach(
+      eventName => {
+
+        videoUploadBox.addEventListener(
+          eventName,
+          e => {
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            videoUploadBox.classList.remove(
+              'dragging'
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+    videoUploadBox.addEventListener(
+      'drop',
+      e => {
+
+        const file =
+          e.dataTransfer.files?.[0];
+
+        if (!file) return;
+
+
+        if (!file.type.startsWith('video/')) {
+
+          alert(
+            'Please drop a video file.'
+          );
+
+          return;
+
+        }
+
+
+        try {
+
+          const dataTransfer =
+            new DataTransfer();
+
+          dataTransfer.items.add(file);
+
+          videoInput.files =
+            dataTransfer.files;
+
+          videoInput.dispatchEvent(
+            new Event(
+              'change',
+              {
+                bubbles: true
+              }
+            )
+          );
+
+        } catch (error) {
+
+          console.error(
+            'Video drop error:',
+            error
+          );
+
+        }
+
+      }
+    );
+
+
+    /* =================================
+       REMOVE VIDEO
+    ================================= */
+
+    removeVideo.addEventListener(
+      'click',
+      e => {
+
+        e.preventDefault();
+
+        videoInput.value = '';
+
+        videoPreview.pause();
+
+        videoPreview.removeAttribute(
+          'src'
+        );
+
+        videoPreview.load();
+
+        videoPreviewBox.style.display =
+          'none';
+
+        videoInfo.style.display =
+          'none';
+
+        videoSelectedActions.style.display =
+          'none';
+
+        videoUploadEmpty.style.display =
+          'flex';
+
+        videoUploadBox.style.minHeight =
+          '';
+
+        videoUploadBox.style.border =
+          '';
+
+        videoUploadBox.style.background =
+          '';
+
+      }
+    );
 
 
     /* =================================
@@ -1116,51 +1641,55 @@
 
 
     /* =================================
-       DRAG & DROP
+       THUMBNAIL DRAG & DROP
     ================================= */
 
     [
       'dragenter',
       'dragover'
-    ].forEach(eventName => {
+    ].forEach(
+      eventName => {
 
-      thumbnailBox.addEventListener(
-        eventName,
-        e => {
+        thumbnailBox.addEventListener(
+          eventName,
+          e => {
 
-          e.preventDefault();
-          e.stopPropagation();
+            e.preventDefault();
+            e.stopPropagation();
 
-          thumbnailBox.classList.add(
-            'dragging'
-          );
+            thumbnailBox.classList.add(
+              'dragging'
+            );
 
-        }
-      );
+          }
+        );
 
-    });
+      }
+    );
 
 
     [
       'dragleave',
       'drop'
-    ].forEach(eventName => {
+    ].forEach(
+      eventName => {
 
-      thumbnailBox.addEventListener(
-        eventName,
-        e => {
+        thumbnailBox.addEventListener(
+          eventName,
+          e => {
 
-          e.preventDefault();
-          e.stopPropagation();
+            e.preventDefault();
+            e.stopPropagation();
 
-          thumbnailBox.classList.remove(
-            'dragging'
-          );
+            thumbnailBox.classList.remove(
+              'dragging'
+            );
 
-        }
-      );
+          }
+        );
 
-    });
+      }
+    );
 
 
     thumbnailBox.addEventListener(
@@ -1268,60 +1797,6 @@
 
 
     /* =================================
-       VIDEO PREVIEW
-    ================================= */
-
-    videoInput.addEventListener(
-      'change',
-      () => {
-
-        const file =
-          videoInput.files?.[0];
-
-
-        if (!file) {
-
-          videoPreviewBox.style.display =
-            'none';
-
-          videoInfo.style.display =
-            'none';
-
-          return;
-
-        }
-
-
-        if (!file.type.startsWith('video/')) {
-          return;
-        }
-
-
-        const url =
-          URL.createObjectURL(file);
-
-
-        videoPreview.src =
-          url;
-
-        videoPreviewBox.style.display =
-          'block';
-
-
-        videoInfo.textContent =
-          file.name +
-          ' • ' +
-          formatFileSize(file.size);
-
-
-        videoInfo.style.display =
-          'block';
-
-      }
-    );
-
-
-    /* =================================
        FILE SIZE
     ================================= */
 
@@ -1372,11 +1847,8 @@
       () => {
 
         /*
-          Your existing app.js performs
-          the real Supabase upload.
-
-          This only changes the UI while
-          app.js is processing.
+          app.js still performs the
+          actual Supabase upload.
         */
 
         publishButton.disabled =
@@ -1414,16 +1886,16 @@
         let percent = 5;
 
 
+        progressBar.style.width =
+          percent + '%';
+
+        progressPercent.textContent =
+          percent + '%';
+
+
         const timer =
           setInterval(
             () => {
-
-              /*
-                Stop at 90%.
-                We don't want the fake
-                progress to reach 100%
-                before Supabase finishes.
-              */
 
               if (percent >= 90) {
 
@@ -1474,17 +1946,11 @@
           );
 
 
-        /*
-          Save timer so other code can
-          stop it if necessary.
-        */
-
         window.divineUploadTimer =
           timer;
 
       }
     );
-
 
   </script>
 
