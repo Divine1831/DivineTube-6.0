@@ -560,15 +560,26 @@ async function loadYouTubeSearch(
 
 async function header() {
   const s = getSb();
-
-  const u =
-    await currentUser();
+  const u = await currentUser();
 
   const avatarEl =
     $('#avatar');
 
   const authLinkEl =
     $('#authLink');
+
+  /*
+   * layout.js creates the navigation dynamically.
+   * If the navigation does not exist yet,
+   * wait for the navigation-ready event.
+   */
+  if (!authLinkEl) {
+    return;
+  }
+
+  /* =========================================
+     USER IS LOGGED IN
+  ========================================= */
 
   if (u) {
 
@@ -580,91 +591,67 @@ async function header() {
         'grid';
     }
 
-    if (authLinkEl) {
+    authLinkEl.textContent =
+      'Sign out';
 
-      authLinkEl.textContent =
-        'Sign out';
+    authLinkEl.href =
+      '#';
 
-      authLinkEl.href =
-        '#';
+    authLinkEl.style.pointerEvents =
+      '';
 
-      authLinkEl.onclick =
-        async e => {
+    /*
+     * Remove any old handler first.
+     */
+    authLinkEl.onclick =
+      null;
 
-          e.preventDefault();
+    /*
+     * SIGN OUT
+     */
+    authLinkEl.onclick =
+      async function(e) {
 
-          if (!s) {
-            toast(
-              'Authentication is not available.'
-            );
+        e.preventDefault();
+        e.stopPropagation();
 
-            return;
-          }
+        if (!s) {
 
-          authLinkEl.textContent =
-            'Signing out…';
+          console.error(
+            'Supabase client is not available.'
+          );
 
-          authLinkEl.style.pointerEvents =
-            'none';
+          toast(
+            'Authentication is not available.'
+          );
 
-          try {
+          return;
+        }
 
-            const {
-              error
-            } =
-              await s.auth.signOut();
+        /*
+         * Prevent double clicks.
+         */
+        authLinkEl.textContent =
+          'Signing out…';
 
-            if (error) {
+        authLinkEl.style.pointerEvents =
+          'none';
 
-              console.error(
-                'Sign out error:',
-                error
-              );
+        try {
 
-              authLinkEl.textContent =
-                'Sign out';
+          console.log(
+            'DivineTube: signing out...'
+          );
 
-              authLinkEl.style.pointerEvents =
-                '';
+          const {
+            error
+          } =
+            await s.auth.signOut();
 
-              toast(
-                error.message ||
-                'Could not sign out.'
-              );
-
-              return;
-            }
-
-            if (avatarEl) {
-              avatarEl.style.display =
-                'none';
-            }
-
-            authLinkEl.textContent =
-              'Sign in';
-
-            authLinkEl.href =
-              'auth.html';
-
-            authLinkEl.onclick =
-              null;
-
-            authLinkEl.style.pointerEvents =
-              '';
-
-            toast(
-              'You have been signed out.'
-            );
-
-            setTimeout(() => {
-              location.href =
-                'index.html';
-            }, 500);
-
-          } catch (error) {
+          if (error) {
 
             console.error(
-              'Sign out error:',
+              'Supabase sign out error:',
               error
             );
 
@@ -675,34 +662,97 @@ async function header() {
               '';
 
             toast(
-              'Something went wrong while signing out.'
+              error.message ||
+              'Could not sign out.'
             );
-          }
-        };
-    }
 
-  } else {
+            return;
+          }
+
+          /*
+           * Update UI immediately.
+           */
+          if (avatarEl) {
+            avatarEl.style.display =
+              'none';
+          }
+
+          authLinkEl.textContent =
+            'Sign in';
+
+          authLinkEl.href =
+            'auth.html';
+
+          authLinkEl.onclick =
+            null;
+
+          authLinkEl.style.pointerEvents =
+            '';
+
+          toast(
+            'You have been signed out.'
+          );
+
+          /*
+           * Give Supabase time to finish
+           * clearing the local session.
+           */
+          setTimeout(() => {
+
+            window.location.href =
+              'index.html';
+
+          }, 500);
+
+        } catch (error) {
+
+          console.error(
+            'Unexpected sign out error:',
+            error
+          );
+
+          authLinkEl.textContent =
+            'Sign out';
+
+          authLinkEl.style.pointerEvents =
+            '';
+
+          toast(
+            error?.message ||
+            'Something went wrong while signing out.'
+          );
+        }
+      };
+
+  }
+
+  /* =========================================
+     USER IS NOT LOGGED IN
+  ========================================= */
+
+  else {
 
     if (avatarEl) {
       avatarEl.style.display =
         'none';
     }
 
-    if (authLinkEl) {
+    authLinkEl.textContent =
+      'Sign in';
 
-      authLinkEl.textContent =
-        'Sign in';
+    authLinkEl.href =
+      'auth.html';
 
-      authLinkEl.href =
-        'auth.html';
+    authLinkEl.onclick =
+      null;
 
-      authLinkEl.onclick =
-        null;
-
-      authLinkEl.style.pointerEvents =
-        '';
-    }
+    authLinkEl.style.pointerEvents =
+      '';
   }
+
+  /* =========================================
+     THEME
+  ========================================= */
 
   if (
     localStorage.dt_theme ===
@@ -3887,6 +3937,20 @@ async function init() {
 document.addEventListener(
   'DOMContentLoaded',
   init
+);
+
+/*
+ * layout.js creates the navigation dynamically.
+ * When navigation is ready, run header()
+ * again so Sign in / Sign out gets its
+ * correct event handler.
+ */
+
+document.addEventListener(
+  'divinetube-nav-ready',
+  () => {
+    header();
+  }
 );
 
 /* =========================================
