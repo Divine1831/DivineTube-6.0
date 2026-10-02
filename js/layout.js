@@ -24,7 +24,7 @@ function nav() {
 
   <aside class="side">
     <a class="nav ${active('index.html')}" href="index.html">⌂<span>Home</span></a>
-    <a class="nav ${active('trending.html')}" href="trending.html">↗<span>Trending</span></a>
+    <a class="nav ${active('shorts.html')}" href="shorts.html">↗<span>Trending</span></a>
     <a class="nav ${active('subscriptions.html')}" href="subscriptions.html">▣<span>Subscriptions</span></a>
 
     <hr>
@@ -49,7 +49,7 @@ function nav() {
       <span>Home</span>
     </a>
 
-    <a class="${active('trending.html')}" href="trending.html">
+    <a class="${active('shorts.html')}" href="shorts.html">
       <b>▣</b>
       <span>Shorts</span>
     </a>
@@ -83,7 +83,7 @@ function loadDivineTubeNavigation() {
 
   app.innerHTML = nav();
 
-  // Tell app.js that the navigation is ready
+  // Tell app.js that the navigation now exists
   document.dispatchEvent(
     new Event('divinetube-nav-ready')
   );
@@ -91,7 +91,7 @@ function loadDivineTubeNavigation() {
 
 
 /* =========================================================
-   START
+   START NAVIGATION
    ========================================================= */
 
 if (document.readyState === 'loading') {
