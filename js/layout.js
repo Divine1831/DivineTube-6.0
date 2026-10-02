@@ -38,7 +38,7 @@ function nav() {
         ⌂<span>Home</span>
       </a>
 
-      <a class="nav ${active('trending.html')}" href="shorts.html">
+      <a class="nav ${active('trending.html')}" href="trending.html">
         ↗<span>Trending</span>
       </a>
 
@@ -121,11 +121,6 @@ function loadDivineTubeNavigation() {
   if (!app) return;
 
   app.innerHTML = nav();
-
-  /*
-   * Tell app.js that #authLink and #avatar
-   * now exist in the page.
-   */
 
   document.dispatchEvent(
     new Event('divinetube-nav-ready')
