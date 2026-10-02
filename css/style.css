@@ -95,6 +95,13 @@ button {
   background: var(--surface2);
 }
 
+.hamb {
+  position: relative;
+  z-index: 10001;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .brand {
   font-size: 19px;
   font-weight: 850;
@@ -768,7 +775,7 @@ body.light .toast {
 }
 
 /* =========================
-   RESPONSIVE
+   DESKTOP RESPONSIVE
 ========================= */
 
 @media (min-width: 580px) {
@@ -787,6 +794,10 @@ body.light .toast {
     display: none;
   }
 
+  .hamb {
+    display: none;
+  }
+
   .side {
     display: block;
     position: fixed;
@@ -801,6 +812,7 @@ body.light .toast {
     z-index: 20;
     overflow-y: auto;
     overflow-x: hidden;
+    transform: none;
   }
 
   .side::-webkit-scrollbar {
@@ -899,7 +911,132 @@ body.light .toast {
   }
 }
 
+/* =========================
+   MOBILE SIDEBAR MENU
+========================= */
+
+@media (max-width: 767px) {
+
+  .hamb {
+    display: grid;
+    place-items: center;
+    position: relative;
+    z-index: 10001;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .side {
+    display: block;
+    position: fixed;
+    top: 58px;
+    left: 0;
+
+    width: 280px;
+
+    height: calc(100vh - 58px);
+    height: calc(100dvh - 58px);
+
+    padding: 14px 10px 24px;
+
+    background: var(--surface);
+
+    border-right: 1px solid var(--line);
+
+    z-index: 10000;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    transform: translateX(-110%);
+    transition: transform 0.25s ease;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .side.open {
+    transform: translateX(0);
+  }
+
+  .side::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .side::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .side::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 999px;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 13px 14px;
+
+    border-radius: 12px;
+
+    margin: 3px 0;
+
+    color: var(--muted);
+
+    font-size: 20px;
+    font-weight: 500;
+
+    transition: var(--transition);
+
+    min-height: 48px;
+  }
+
+  .nav span {
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .nav:active,
+  .nav.active {
+    background: var(--surface2);
+    color: var(--accent);
+  }
+
+  .nav:active span,
+  .nav.active span {
+    color: var(--text);
+  }
+
+  .side hr {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 14px 5px;
+  }
+
+  .page {
+    margin-left: 0;
+    max-width: 100%;
+  }
+
+}
+
+/* =========================
+   SMALL PHONES
+========================= */
+
 @media (max-width: 430px) {
+
+  .top {
+    padding: 0 10px;
+  }
+
   .brand {
     font-size: 16px;
   }
@@ -932,4 +1069,9 @@ body.light .toast {
     min-height: 220px;
     border-radius: 10px;
   }
+
+  .side {
+    width: min(280px, 86vw);
+  }
+
 }
