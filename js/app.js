@@ -3791,6 +3791,14 @@ async function init() {
         );
       };
 
+    /*
+     * IMPORTANT:
+     * Use addEventListener instead of
+     * assigning a.onclick.
+     *
+     * The old code overwrote the
+     * Sign out onclick handler.
+     */
     side
       .querySelectorAll(
         'a'
@@ -3798,11 +3806,17 @@ async function init() {
       .forEach(
         a => {
 
-          a.onclick =
-            () =>
+          a.addEventListener(
+            'click',
+            () => {
+
               side.classList.remove(
                 'open'
               );
+
+            }
+          );
+
         }
       );
 
