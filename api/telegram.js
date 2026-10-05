@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     } catch (error) {
       console.error(error);
+
       return res.status(500).json({
         error: "Failed to set Telegram webhook"
       });
@@ -48,6 +49,7 @@ export default async function handler(req, res) {
 
     let reply = "";
 
+    // START
     if (text === "/start") {
       reply =
         "👋 Welcome to DivineTube!\n\n" +
@@ -57,6 +59,7 @@ export default async function handler(req, res) {
         "/support - Contact support\n" +
         "/help - Show help";
 
+    // HELP
     } else if (text === "/help") {
       reply =
         "🤖 DivineTube Bot\n\n" +
@@ -64,33 +67,50 @@ export default async function handler(req, res) {
         "/latest - Latest videos\n" +
         "/support - Contact DivineTube support";
 
+    // LATEST
     } else if (text === "/latest") {
       reply =
         "🎬 Latest DivineTube videos\n\n" +
         "Visit DivineTube:\n" +
         "https://divinetube-6-0.vercel.app/";
 
+    // SUPPORT
     } else if (text === "/support") {
       reply =
         "💬 DivineTube Support\n\n" +
         "Send your support request here and we'll get back to you.";
 
+    // UNKNOWN COMMAND
     } else {
       reply =
         "I don't recognize that command.\n\n" +
         "Try /help to see what I can do.";
     }
 
+    // SEND MESSAGE WITH WEBSITE BUTTON
     await fetch(
       `https://api.telegram.org/bot${token}/sendMessage`,
       {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json"
         },
+
         body: JSON.stringify({
           chat_id: chatId,
-          text: reply
+          text: reply,
+
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🎬 Open DivineTube",
+                  url: "https://divinetube-6-0.vercel.app/"
+                }
+              ]
+            ]
+          }
         })
       }
     );
