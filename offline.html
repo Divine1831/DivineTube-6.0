@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0f19">
+  <title>Offline | DivineTube</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#0b0f19;color:#f8fafc;font-family:system-ui,-apple-system,Segoe UI,sans-serif;text-align:center}
+    main{max-width:420px}
+    .icon{width:88px;height:88px;object-fit:contain;border-radius:22px}
+    h1{margin:20px 0 8px;font-size:1.8rem}
+    p{color:#aab6cc;line-height:1.6}
+    button{margin-top:14px;padding:12px 20px;border:0;border-radius:12px;background:#38bdf8;color:#07111e;font-weight:700;font-size:1rem;cursor:pointer}
+  </style>
+</head>
+<body>
+  <main>
+    <img class="icon" src="/icons/icon-192.png" alt="DivineTube icon">
+    <h1>You're offline</h1>
+    <p>DivineTube needs an internet connection to load videos and account information. Reconnect, then try again.</p>
+    <button onclick="location.reload()">Try again</button>
+  </main>
+</body>
+</html>
